@@ -1,0 +1,19 @@
+build/
+.gradle/
+
+# LaTeX
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/

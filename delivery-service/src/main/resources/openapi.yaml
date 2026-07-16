@@ -1,0 +1,154 @@
+openapi: 3.0.3
+info:
+  title: Delivery Service API
+  description: Manages delivery scheduling and tracking
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8091
+
+tags:
+  - name: deliveries
+    description: Delivery management and tracking
+
+paths:
+
+  /api/deliveries:
+    post:
+      tags: [deliveries]
+      summary: Schedule a new delivery
+      operationId: scheduleDelivery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orderId, pickupLat, pickupLng, deliveryLat, deliveryLng, weightKg]
+              properties:
+                orderId:
+                  type: string
+                pickupLat:
+                  type: number
+                pickupLng:
+                  type: number
+                deliveryLat:
+                  type: number
+                deliveryLng:
+                  type: number
+                weightKg:
+                  type: number
+      responses:
+        '201':
+          description: Delivery scheduled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Delivery'
+
+  /api/deliveries/{id}:
+    get:
+      tags: [deliveries]
+      summary: Track a delivery
+      operationId: trackDelivery
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Delivery'
+        '404':
+          description: Delivery not found
+
+  /api/deliveries/{id}/start:
+    post:
+      tags: [deliveries]
+      summary: Start delivery transit
+      operationId: startDelivery
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery in transit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Delivery'
+        '400':
+          description: Delivery cannot be started
+
+  /api/deliveries/{id}/complete:
+    post:
+      tags: [deliveries]
+      summary: Complete a delivery
+      operationId: completeDelivery
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Delivery'
+        '400':
+          description: Delivery cannot be completed
+
+  /api/deliveries/order/{orderId}:
+    get:
+      tags: [deliveries]
+      summary: Find delivery by order ID
+      operationId: findDeliveryByOrderId
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Delivery found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Delivery'
+        '404':
+          description: Delivery not found
+
+components:
+  schemas:
+    Delivery:
+      type: object
+      properties:
+        id:
+          type: string
+        orderId:
+          type: string
+        status:
+          type: string
+          enum: [SCHEDULED, DRONE_ASSIGNED, IN_TRANSIT, DELIVERED, FAILED]
+        droneId:
+          type: string
+        currentLat:
+          type: number
+        currentLng:
+          type: number
+        estimatedMinutes:
+          type: number
+        createdAt:
+          type: string

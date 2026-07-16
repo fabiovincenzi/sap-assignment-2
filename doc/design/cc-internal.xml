@@ -1,0 +1,442 @@
+<mxfile host="app.diagrams.net" modified="2026-07-09T00:00:00.000Z" agent="Claude" version="24.7.17">
+  <diagram name="Internal Layer Collaboration" id="layers">
+    <mxGraphModel dx="1600" dy="620" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="550" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===================== ORDER SERVICE ===================== -->
+        <mxCell id="o_box" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;«Backend»&lt;br&gt;&lt;b&gt;:orderService&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="20" y="15" width="440" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="o_box_i" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="o_box">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="o_ctrl" value="«Adapter»&lt;br&gt;&lt;b&gt;:controller&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="120" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="o_ctrl_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="o_ctrl">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="o_repo" value="«Adapter»&lt;br&gt;&lt;b&gt;:inMemoryOrderRepo&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="180" y="70" width="135" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="o_repo_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="o_repo">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="o_proxy" value="«Adapter»&lt;br&gt;&lt;b&gt;:deliveryProxy&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="330" y="70" width="120" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="o_proxy_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="o_proxy">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Order dashed line infra/app -->
+        <mxCell id="o_dash1" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="25" y="145" as="sourcePoint" />
+            <mxPoint x="455" y="145" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="o_infra_lbl" value="INFRASTRUCTURE" style="text;align=left;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="28" y="128" width="90" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Order Application -->
+        <mxCell id="o_app" value="«Application»&lt;br&gt;&lt;b&gt;:orderServiceImpl&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="130" y="210" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="o_app_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="o_app">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Order Port 1: InBound "OrderService" -->
+        <mxCell id="o_p1_loll" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=0;sketch=0;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;endSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="175" y="210" as="sourcePoint" />
+            <mxPoint x="100" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="o_p1_sock" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=halfCircle;endFill=0;endSize=6;strokeWidth=1;sketch=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="100" y="125" as="sourcePoint" />
+            <mxPoint x="100" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="o_p1_txt" value="OrderService" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="40" y="165" width="80" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Order Port 2: OutBound "OrderRepository" -->
+        <mxCell id="o_p2_loll" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=0;sketch=0;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;endSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="247" y="125" as="sourcePoint" />
+            <mxPoint x="247" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="o_p2_sock" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=halfCircle;endFill=0;endSize=6;strokeWidth=1;sketch=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="235" y="210" as="sourcePoint" />
+            <mxPoint x="247" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="o_p2_txt" value="OrderRepository" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="195" y="165" width="95" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Order Port 3: OutBound "DeliveryServicePort" -->
+        <mxCell id="o_p3_loll" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=0;sketch=0;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;endSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="390" y="125" as="sourcePoint" />
+            <mxPoint x="390" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="o_p3_sock" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=halfCircle;endFill=0;endSize=6;strokeWidth=1;sketch=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="310" y="210" as="sourcePoint" />
+            <mxPoint x="390" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="o_p3_txt" value="DeliveryServicePort" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="335" y="165" width="110" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Order dashed line app/domain -->
+        <mxCell id="o_dash2" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="25" y="290" as="sourcePoint" />
+            <mxPoint x="455" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="o_app_lbl" value="APPLICATION" style="text;align=left;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="28" y="293" width="80" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Order Domain -->
+        <mxCell id="o_order" value="«Domain»&lt;br&gt;&lt;b&gt;:order&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="80" y="330" width="150" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="o_order_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="o_order">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="o_user" value="«Domain»&lt;br&gt;&lt;b&gt;:user&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="270" y="330" width="130" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="o_user_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="o_user">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="o_dom_lbl" value="DOMAIN" style="text;align=left;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="28" y="410" width="60" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Order dependency arrows app -> domain -->
+        <mxCell id="o_dep1" value="" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="200" y="265" as="sourcePoint" />
+            <mxPoint x="155" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="o_dep2" value="" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="270" y="265" as="sourcePoint" />
+            <mxPoint x="335" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===================== DELIVERY SERVICE ===================== -->
+        <mxCell id="d_box" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;«Backend»&lt;br&gt;&lt;b&gt;:deliveryService&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="500" y="15" width="460" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="d_box_i" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="d_box">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="d_ctrl" value="«Adapter»&lt;br&gt;&lt;b&gt;:controller&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="520" y="70" width="120" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d_ctrl_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="d_ctrl">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="d_repo" value="«Adapter»&lt;br&gt;&lt;b&gt;:inMemoryDeliveryRepo&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="660" y="70" width="155" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d_repo_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="d_repo">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="d_proxy" value="«Adapter»&lt;br&gt;&lt;b&gt;:droneProxy&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="830" y="70" width="120" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d_proxy_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="d_proxy">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="d_dash1" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="505" y="145" as="sourcePoint" />
+            <mxPoint x="955" y="145" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d_infra_lbl" value="INFRASTRUCTURE" style="text;align=left;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="508" y="128" width="90" height="16" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d_app" value="«Application»&lt;br&gt;&lt;b&gt;:deliveryServiceImpl&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="610" y="210" width="210" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d_app_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="d_app">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Delivery Port 1: InBound "DeliveryService" -->
+        <mxCell id="d_p1_loll" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=0;sketch=0;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;endSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="655" y="210" as="sourcePoint" />
+            <mxPoint x="580" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d_p1_sock" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=halfCircle;endFill=0;endSize=6;strokeWidth=1;sketch=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="580" y="125" as="sourcePoint" />
+            <mxPoint x="580" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d_p1_txt" value="DeliveryService" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="520" y="165" width="85" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Delivery Port 2: OutBound "DeliveryRepository" -->
+        <mxCell id="d_p2_loll" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=0;sketch=0;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;endSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="727" y="125" as="sourcePoint" />
+            <mxPoint x="727" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d_p2_sock" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=halfCircle;endFill=0;endSize=6;strokeWidth=1;sketch=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="715" y="210" as="sourcePoint" />
+            <mxPoint x="727" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d_p2_txt" value="DeliveryRepository" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="675" y="165" width="100" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Delivery Port 3: OutBound "DroneServicePort" -->
+        <mxCell id="d_p3_loll" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=0;sketch=0;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;endSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="890" y="125" as="sourcePoint" />
+            <mxPoint x="890" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d_p3_sock" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=halfCircle;endFill=0;endSize=6;strokeWidth=1;sketch=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="790" y="210" as="sourcePoint" />
+            <mxPoint x="890" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d_p3_txt" value="DroneServicePort" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="840" y="165" width="100" height="16" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d_dash2" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="505" y="290" as="sourcePoint" />
+            <mxPoint x="955" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="d_app_lbl" value="APPLICATION" style="text;align=left;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="508" y="293" width="80" height="16" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d_delivery" value="«Domain»&lt;br&gt;&lt;b&gt;:delivery&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="620" y="330" width="170" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="d_delivery_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="d_delivery">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="d_dom_lbl" value="DOMAIN" style="text;align=left;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="508" y="410" width="60" height="16" as="geometry" />
+        </mxCell>
+
+        <mxCell id="d_dep1" value="" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="715" y="265" as="sourcePoint" />
+            <mxPoint x="705" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===================== DRONE SERVICE ===================== -->
+        <mxCell id="dr_box" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;«Backend»&lt;br&gt;&lt;b&gt;:droneService&lt;/b&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:0px;margin-left:8px;&quot;&gt;&lt;br&gt;&lt;/p&gt;" style="align=left;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="980" y="15" width="445" height="490" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_box_i" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="dr_box">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="dr_ctrl" value="«Adapter»&lt;br&gt;&lt;b&gt;:controller&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="70" width="120" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_ctrl_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="dr_ctrl">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="dr_repo" value="«Adapter»&lt;br&gt;&lt;b&gt;:inMemoryDroneRepo&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1130" y="70" width="150" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_repo_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="dr_repo">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="dr_proxy" value="«Adapter»&lt;br&gt;&lt;b&gt;:deliveryProxy&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1295" y="70" width="120" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_proxy_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="dr_proxy">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="dr_dash1" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="985" y="145" as="sourcePoint" />
+            <mxPoint x="1420" y="145" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dr_infra_lbl" value="INFRASTRUCTURE" style="text;align=left;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="988" y="128" width="90" height="16" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dr_app" value="«Application»&lt;br&gt;&lt;b&gt;:droneServiceImpl&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="210" width="195" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_app_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="dr_app">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Drone Port 1: InBound "DroneService" -->
+        <mxCell id="dr_p1_loll" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=0;sketch=0;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;endSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1125" y="210" as="sourcePoint" />
+            <mxPoint x="1055" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dr_p1_sock" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=halfCircle;endFill=0;endSize=6;strokeWidth=1;sketch=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1055" y="125" as="sourcePoint" />
+            <mxPoint x="1055" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dr_p1_txt" value="DroneService" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="998" y="165" width="80" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Drone Port 2: OutBound "DroneRepository" -->
+        <mxCell id="dr_p2_loll" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=0;sketch=0;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;endSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1205" y="125" as="sourcePoint" />
+            <mxPoint x="1205" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dr_p2_sock" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=halfCircle;endFill=0;endSize=6;strokeWidth=1;sketch=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1178" y="210" as="sourcePoint" />
+            <mxPoint x="1205" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dr_p2_txt" value="DroneRepository" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1155" y="165" width="95" height="16" as="geometry" />
+        </mxCell>
+
+        <!-- Drone Port 3: OutBound "DeliveryServicePort" -->
+        <mxCell id="dr_p3_loll" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=oval;endFill=0;sketch=0;sourcePerimeterSpacing=0;targetPerimeterSpacing=0;endSize=10;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1355" y="125" as="sourcePoint" />
+            <mxPoint x="1355" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dr_p3_sock" value="" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=halfCircle;endFill=0;endSize=6;strokeWidth=1;sketch=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1250" y="210" as="sourcePoint" />
+            <mxPoint x="1355" y="178" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dr_p3_txt" value="DeliveryServicePort" style="text;align=center;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="165" width="110" height="16" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dr_dash2" value="" style="endArrow=none;dashed=1;html=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="985" y="290" as="sourcePoint" />
+            <mxPoint x="1420" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dr_app_lbl" value="APPLICATION" style="text;align=left;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="988" y="293" width="80" height="16" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dr_drone" value="«Domain»&lt;br&gt;&lt;b&gt;:drone&lt;/b&gt;" style="html=1;dropTarget=0;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="330" width="170" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="dr_drone_i" value="" style="shape=module;jettyWidth=8;jettyHeight=4;" vertex="1" parent="dr_drone">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-27" y="7" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="dr_dom_lbl" value="DOMAIN" style="text;align=left;fontStyle=1;verticalAlign=middle;spacingLeft=3;spacingRight=3;strokeColor=none;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;html=1;fontSize=9;" vertex="1" parent="1">
+          <mxGeometry x="988" y="410" width="60" height="16" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dr_dep1" value="" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1178" y="265" as="sourcePoint" />
+            <mxPoint x="1180" y="330" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

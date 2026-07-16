@@ -1,0 +1,184 @@
+openapi: 3.0.3
+info:
+  title: Drone Service API
+  description: Manages drone fleet registration and tracking
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8092
+
+tags:
+  - name: drones
+    description: Drone fleet management
+
+paths:
+
+  /api/drones:
+    post:
+      tags: [drones]
+      summary: Register a new drone
+      operationId: registerDrone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [maxWeightKg, lat, lng]
+              properties:
+                maxWeightKg:
+                  type: number
+                lat:
+                  type: number
+                lng:
+                  type: number
+      responses:
+        '201':
+          description: Drone registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Drone'
+
+  /api/drones/available:
+    get:
+      tags: [drones]
+      summary: Find nearest available drone
+      operationId: findAvailableDrone
+      parameters:
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+        - name: weightKg
+          in: query
+          required: true
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Available drone found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  droneId:
+                    type: string
+        '404':
+          description: No available drone
+
+  /api/drones/{id}:
+    get:
+      tags: [drones]
+      summary: Get drone details
+      operationId: getDrone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Drone found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Drone'
+        '404':
+          description: Drone not found
+
+  /api/drones/{id}/location:
+    post:
+      tags: [drones]
+      summary: Update drone GPS location
+      operationId: updateDroneLocation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lat, lng]
+              properties:
+                lat:
+                  type: number
+                lng:
+                  type: number
+      responses:
+        '200':
+          description: Location updated
+        '400':
+          description: Drone not found
+
+  /api/drones/{id}/release:
+    post:
+      tags: [drones]
+      summary: Release drone after delivery
+      operationId: releaseDrone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Drone released
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Drone'
+        '400':
+          description: Drone not found
+
+  /api/drones/{id}/assign:
+    post:
+      tags: [drones]
+      summary: Assign drone to a delivery
+      operationId: assignDrone
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Drone assigned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Drone'
+        '400':
+          description: Drone not found
+
+components:
+  schemas:
+    Drone:
+      type: object
+      properties:
+        id:
+          type: string
+        maxWeightKg:
+          type: number
+        lat:
+          type: number
+        lng:
+          type: number
+        status:
+          type: string
+          enum: [AVAILABLE, IN_FLIGHT, CHARGING, MAINTENANCE]

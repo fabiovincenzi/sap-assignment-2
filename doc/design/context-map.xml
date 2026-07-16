@@ -1,0 +1,98 @@
+<mxfile host="app.diagrams.net" modified="2026-07-13T00:00:00.000Z" agent="Claude" version="24.7.17">
+  <diagram name="Context Map" id="contextMap">
+    <mxGraphModel dx="1100" dy="520" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="520" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Order Service -->
+        <mxCell id="os" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Order Service&lt;/b&gt;&lt;br&gt;&lt;i&gt;(Supporting)&lt;/i&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:4px;font-size:11px;&quot;&gt;Order, User&lt;br&gt;Porta 8090&lt;/p&gt;" style="align=center;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;rounded=1;arcSize=8;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="os_i" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="os">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Delivery Service -->
+        <mxCell id="ds" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Delivery Service&lt;/b&gt;&lt;br&gt;&lt;i&gt;(Core)&lt;/i&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:4px;font-size:11px;&quot;&gt;Delivery, Route&lt;br&gt;Porta 8091&lt;/p&gt;" style="align=center;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;rounded=1;arcSize=8;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="430" y="140" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ds_i" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="ds">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Drone Service -->
+        <mxCell id="drs" value="&lt;p style=&quot;margin:0px;margin-top:6px;text-align:center;&quot;&gt;&lt;b&gt;Drone Service&lt;/b&gt;&lt;br&gt;&lt;i&gt;(Supporting)&lt;/i&gt;&lt;/p&gt;&lt;hr size=&quot;1&quot; style=&quot;border-style:solid;&quot;&gt;&lt;p style=&quot;margin:4px;font-size:11px;&quot;&gt;Drone, Location&lt;br&gt;Porta 8092&lt;/p&gt;" style="align=center;overflow=fill;html=1;dropTarget=0;whiteSpace=wrap;rounded=1;arcSize=8;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="820" y="140" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="drs_i" value="" style="shape=component;jettyWidth=8;jettyHeight=4;" vertex="1" parent="drs">
+          <mxGeometry x="1" width="20" height="20" relative="1" as="geometry">
+            <mxPoint x="-24" y="4" as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Customer actor -->
+        <mxCell id="actor" value="Customer" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="130" y="20" width="30" height="55" as="geometry" />
+        </mxCell>
+        <mxCell id="actor_arr" value="" style="endArrow=block;endFill=1;html=1;rounded=0;" edge="1" parent="1" source="actor" target="os">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Order -> Delivery: OrderConfirmed -->
+        <mxCell id="e1" value="&lt;b&gt;OrderConfirmed&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;Customer-Supplier&lt;/i&gt;" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry x="0.05" relative="1" as="geometry">
+            <mxPoint x="260" y="175" as="sourcePoint" />
+            <mxPoint x="430" y="175" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Delivery -> Order: DeliveryCompleted -->
+        <mxCell id="e2" value="&lt;b&gt;DeliveryCompleted&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;Customer-Supplier&lt;/i&gt;" style="html=1;verticalAlign=top;endArrow=block;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry x="0.05" relative="1" as="geometry">
+            <mxPoint x="430" y="235" as="sourcePoint" />
+            <mxPoint x="260" y="235" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Delivery -> Drone: AssignDrone -->
+        <mxCell id="e3" value="&lt;b&gt;AssignDrone&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;Partnership&lt;/i&gt;" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry x="0.05" relative="1" as="geometry">
+            <mxPoint x="650" y="175" as="sourcePoint" />
+            <mxPoint x="820" y="175" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Drone -> Delivery: DroneLocationUpdated / ReleaseDrone -->
+        <mxCell id="e4" value="&lt;b&gt;DroneLocationUpdated&lt;/b&gt;&lt;br&gt;&lt;b&gt;ReleaseDrone&lt;/b&gt;&lt;br&gt;&lt;i style=&quot;font-size:10px;&quot;&gt;Partnership&lt;/i&gt;" style="html=1;verticalAlign=top;endArrow=block;curved=0;rounded=0;" edge="1" parent="1">
+          <mxGeometry x="0.05" relative="1" as="geometry">
+            <mxPoint x="820" y="235" as="sourcePoint" />
+            <mxPoint x="650" y="235" as="targetPoint" />
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- REST labels -->
+        <mxCell id="r1" value="REST" style="text;align=center;fontStyle=0;verticalAlign=middle;strokeColor=none;html=1;fontSize=10;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="325" y="195" width="40" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="REST" style="text;align=center;fontStyle=0;verticalAlign=middle;strokeColor=none;html=1;fontSize=10;fontColor=#888888;" vertex="1" parent="1">
+          <mxGeometry x="715" y="195" width="40" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Note -->
+        <mxCell id="note" value="In Assignment 1 tutte le interazioni sono&lt;br&gt;chiamate REST sincrone (proxy adapter).&lt;br&gt;Nessun event broker." style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=11;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="370" y="340" width="280" height="70" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

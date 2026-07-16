@@ -1,0 +1,143 @@
+<mxfile host="app.diagrams.net" modified="2026-07-13T00:00:00.000Z" agent="Claude" version="24.7.17">
+  <diagram name="Sequence Diagram" id="sequenceDiagram">
+    <mxGraphModel dx="1200" dy="780" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="780" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Participants -->
+        <mxCell id="p1" value="&lt;b&gt;:Customer&lt;/b&gt;" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;" vertex="1" parent="1">
+          <mxGeometry x="80" y="30" width="30" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2" value="&lt;b&gt;:OrderService&lt;/b&gt;&lt;br&gt;&lt;i&gt;port 8090&lt;/i&gt;" style="html=1;whiteSpace=wrap;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="250" y="30" width="130" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p3" value="&lt;b&gt;:DeliveryService&lt;/b&gt;&lt;br&gt;&lt;i&gt;port 8091&lt;/i&gt;" style="html=1;whiteSpace=wrap;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="530" y="30" width="140" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p4" value="&lt;b&gt;:DroneService&lt;/b&gt;&lt;br&gt;&lt;i&gt;port 8092&lt;/i&gt;" style="html=1;whiteSpace=wrap;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="810" y="30" width="130" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- Lifelines -->
+        <mxCell id="l1" value="" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;newEdgeStyle={&quot;edgeStyle&quot;:&quot;elbowEdgeStyle&quot;,&quot;elbow&quot;:&quot;vertical&quot;,&quot;curved&quot;:0,&quot;rounded&quot;:0};" vertex="1" parent="1">
+          <mxGeometry x="93" y="90" width="4" height="650" as="geometry" />
+        </mxCell>
+        <mxCell id="l2" value="" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;" vertex="1" parent="1">
+          <mxGeometry x="313" y="80" width="4" height="660" as="geometry" />
+        </mxCell>
+        <mxCell id="l3" value="" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;" vertex="1" parent="1">
+          <mxGeometry x="598" y="80" width="4" height="660" as="geometry" />
+        </mxCell>
+        <mxCell id="l4" value="" style="html=1;points=[];perimeter=orthogonalPerimeter;outlineConnect=0;targetShapes=umlLifeline;portConstraint=eastwest;" vertex="1" parent="1">
+          <mxGeometry x="873" y="80" width="4" height="660" as="geometry" />
+        </mxCell>
+
+        <!-- Activation bars -->
+        <mxCell id="a2" value="" style="html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="308" y="120" width="14" height="560" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="" style="html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="593" y="350" width="14" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" value="" style="html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="868" y="420" width="14" height="200" as="geometry" />
+        </mxCell>
+
+        <!-- Message 1: register -->
+        <mxCell id="m1" value="1: POST /api/users/register" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="97" y="140" as="sourcePoint" />
+            <mxPoint x="308" y="140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Message 2: login -->
+        <mxCell id="m2" value="2: POST /api/users/login" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="97" y="190" as="sourcePoint" />
+            <mxPoint x="308" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Message 3: create order -->
+        <mxCell id="m3" value="3: POST /api/orders" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="97" y="250" as="sourcePoint" />
+            <mxPoint x="308" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Message 4: confirm order -->
+        <mxCell id="m4" value="4: POST /api/orders/:id/confirm" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="97" y="310" as="sourcePoint" />
+            <mxPoint x="308" y="310" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Message 5: OrderConfirmed -> Delivery (via proxy) -->
+        <mxCell id="m5" value="5: OrderConfirmed (proxy adapter)" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;fontSize=11;fontStyle=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="322" y="370" as="sourcePoint" />
+            <mxPoint x="593" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Message 6: Delivery -> Drone: find available drone -->
+        <mxCell id="m6" value="6: GET /api/drones/available" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="607" y="430" as="sourcePoint" />
+            <mxPoint x="868" y="430" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Message 7: Drone assigned response -->
+        <mxCell id="m7" value="drone assigned" style="html=1;verticalAlign=bottom;endArrow=open;dashed=1;curved=0;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="868" y="470" as="sourcePoint" />
+            <mxPoint x="607" y="470" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Loop fragment for location updates -->
+        <mxCell id="loop" value="loop [in transit]" style="shape=umlFrame;whiteSpace=wrap;html=1;width=100;height=20;fillColor=none;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="575" y="490" width="330" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- Message 8: Drone location update -->
+        <mxCell id="m8" value="7: POST /api/drones/:id/location" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;fontSize=11;fontColor=#888888;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="868" y="540" as="sourcePoint" />
+            <mxPoint x="607" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Message 9: Delivery completed -> release drone -->
+        <mxCell id="m9" value="8: POST /api/drones/:id/release" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;fontSize=11;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="607" y="595" as="sourcePoint" />
+            <mxPoint x="868" y="595" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Message 10: DeliveryCompleted -> Order (via proxy) -->
+        <mxCell id="m10" value="9: DeliveryCompleted (proxy adapter)" style="html=1;verticalAlign=bottom;endArrow=block;curved=0;rounded=0;fontSize=11;fontStyle=1;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="593" y="650" as="sourcePoint" />
+            <mxPoint x="322" y="650" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Note: proxy adapter -->
+        <mxCell id="n1" value="Le chiamate inter-servizio&lt;br&gt;passano attraverso il&lt;br&gt;&lt;b&gt;Proxy Adapter&lt;/b&gt;&lt;br&gt;(OutBoundPort + Adapter)" style="shape=note;whiteSpace=wrap;html=1;backgroundOutline=1;size=15;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;align=left;spacingLeft=5;" vertex="1" parent="1">
+          <mxGeometry x="380" y="400" width="190" height="70" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,6 @@
+rootProject.name = 'shipping-on-the-air'
+
+include 'common'
+include 'order-service'
+include 'delivery-service'
+include 'drone-service'

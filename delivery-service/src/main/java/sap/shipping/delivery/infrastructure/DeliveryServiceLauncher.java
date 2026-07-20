@@ -8,10 +8,18 @@ import sap.shipping.delivery.application.DeliveryService;
 public class DeliveryServiceLauncher extends AbstractVerticle {
 
     private static final int PORT = 8091;
-    private static final String DRONE_HOST = "localhost";
-    private static final int DRONE_PORT = 8092;
-    private static final String ORDER_HOST = "localhost";
-    private static final int ORDER_PORT = 8090;
+
+    /* Externalized configuration: defaults target a manual local deployment,
+       the docker-compose file overrides them with the service container names. */
+    private static final String DRONE_HOST = env("DRONE_HOST", "localhost");
+    private static final int DRONE_PORT = Integer.parseInt(env("DRONE_PORT", "8092"));
+    private static final String ORDER_HOST = env("ORDER_HOST", "localhost");
+    private static final int ORDER_PORT = Integer.parseInt(env("ORDER_PORT", "8090"));
+
+    private static String env(String name, String defaultValue) {
+        var value = System.getenv(name);
+        return value != null ? value : defaultValue;
+    }
 
     @Override
     public void start() {

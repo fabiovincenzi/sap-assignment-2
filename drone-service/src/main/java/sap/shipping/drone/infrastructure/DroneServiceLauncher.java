@@ -36,7 +36,11 @@ public class DroneServiceLauncher extends AbstractVerticle {
         vertx.createHttpServer()
             .requestHandler(controller.createRouter(vertx))
             .listen(PORT)
-            .onSuccess(s -> logger.log(Level.INFO, "Drone Service ready - port: " + PORT));
+            .onSuccess(s -> logger.log(Level.INFO, "Drone Service ready - port: " + PORT))
+            .onFailure(err -> {
+                logger.log(Level.SEVERE, "Drone Service failed to bind port " + PORT + " - " + err.getMessage());
+                vertx.close().onComplete(v -> System.exit(1));
+            });
     }
 
     public static void main(String[] args) {

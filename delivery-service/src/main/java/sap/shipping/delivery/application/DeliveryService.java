@@ -51,12 +51,15 @@ public class DeliveryService {
     }
 
     public void updateDronePosition(String droneId, double lat, double lng) {
-        repository.findByDroneId(droneId).ifPresent(delivery -> {
-            delivery.updatePosition(lat, lng);
-            repository.save(delivery);
-            logger.log(Level.INFO, "update position of delivery " + delivery.getId().value()
+        var delivery = repository.findByDroneId(droneId);
+        if (delivery.isPresent()) {
+            delivery.get().updatePosition(lat, lng);
+            repository.save(delivery.get());
+            logger.log(Level.INFO, "update position of delivery " + delivery.get().getId().value()
                 + " to (" + lat + ", " + lng + ")");
-        });
+        } else {
+            logger.log(Level.WARNING, "no delivery found for drone " + droneId);
+        }
     }
 
     public Delivery completeDelivery(DeliveryId deliveryId) {

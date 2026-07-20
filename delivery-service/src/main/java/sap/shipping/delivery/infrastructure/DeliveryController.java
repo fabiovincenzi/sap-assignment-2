@@ -39,6 +39,7 @@ public class DeliveryController {
         });
 
         router.post("/api/deliveries").handler(this::scheduleDelivery);
+        router.post("/api/deliveries/drone-position").handler(this::updateDronePosition);
         router.post("/api/deliveries/:id/start").handler(this::startDelivery);
         router.post("/api/deliveries/:id/complete").handler(this::completeDelivery);
         router.get("/api/deliveries/:id").handler(this::trackDelivery);
@@ -65,6 +66,20 @@ public class DeliveryController {
             ctx.response().setStatusCode(201)
                 .putHeader("Content-Type", "application/json")
                 .end(deliveryToJson(delivery).encode());
+        } catch (Exception e) {
+            ctx.response().setStatusCode(400).end(new JsonObject().put("error", e.getMessage()).encode());
+        }
+    }
+
+    private void updateDronePosition(RoutingContext ctx) {
+        logger.log(Level.INFO, "UpdateDronePosition request - " + ctx.currentRoute().getPath());
+        var body = ctx.body().asJsonObject();
+        try {
+            deliveryService.updateDronePosition(
+                body.getString("droneId"),
+                body.getDouble("lat"),
+                body.getDouble("lng"));
+            ctx.response().setStatusCode(200).end();
         } catch (Exception e) {
             ctx.response().setStatusCode(400).end(new JsonObject().put("error", e.getMessage()).encode());
         }

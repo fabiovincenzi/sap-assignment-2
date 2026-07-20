@@ -240,6 +240,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/Delivery'
 
+  /api/deliveries/drone-position:
+    post:
+      tags: [deliveries]
+      summary: Update the current position of the drone carrying a delivery (called by Drone Service)
+      operationId: updateDronePosition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [droneId, lat, lng]
+              properties:
+                droneId:
+                  type: string
+                lat:
+                  type: number
+                lng:
+                  type: number
+      responses:
+        '200':
+          description: Position updated
+        '400':
+          description: Invalid input
+
   /api/deliveries/{id}:
     get:
       tags: [deliveries]

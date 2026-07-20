@@ -39,7 +39,11 @@ public class OrderServiceLauncher extends AbstractVerticle {
         vertx.createHttpServer()
             .requestHandler(controller.createRouter(vertx))
             .listen(PORT)
-            .onSuccess(s -> logger.log(Level.INFO, "Order Service ready - port: " + PORT));
+            .onSuccess(s -> logger.log(Level.INFO, "Order Service ready - port: " + PORT))
+            .onFailure(err -> {
+                logger.log(Level.SEVERE, "Order Service failed to bind port " + PORT + " - " + err.getMessage());
+                vertx.close().onComplete(v -> System.exit(1));
+            });
     }
 
     public static void main(String[] args) {

@@ -39,7 +39,11 @@ public class DeliveryServiceLauncher extends AbstractVerticle {
         vertx.createHttpServer()
             .requestHandler(controller.createRouter(vertx))
             .listen(PORT)
-            .onSuccess(s -> logger.log(Level.INFO, "Delivery Service ready - port: " + PORT));
+            .onSuccess(s -> logger.log(Level.INFO, "Delivery Service ready - port: " + PORT))
+            .onFailure(err -> {
+                logger.log(Level.SEVERE, "Delivery Service failed to bind port " + PORT + " - " + err.getMessage());
+                vertx.close().onComplete(v -> System.exit(1));
+            });
     }
 
     public static void main(String[] args) {

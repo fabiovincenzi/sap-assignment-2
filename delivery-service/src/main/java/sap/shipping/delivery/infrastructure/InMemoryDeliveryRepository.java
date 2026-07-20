@@ -7,15 +7,20 @@ import sap.shipping.delivery.domain.DeliveryId;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Adapter
 public class InMemoryDeliveryRepository implements DeliveryRepository {
+
+    static Logger logger = Logger.getLogger("[DeliveryRepo]");
 
     private final Map<DeliveryId, Delivery> store = new ConcurrentHashMap<>();
 
     @Override
     public void save(Delivery delivery) {
         store.put(delivery.getId(), delivery);
+        logger.log(Level.INFO, "save delivery " + delivery.getId().value() + " - status " + delivery.status());
     }
 
     @Override

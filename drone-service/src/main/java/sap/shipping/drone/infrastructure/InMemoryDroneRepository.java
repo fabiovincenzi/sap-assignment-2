@@ -8,15 +8,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Adapter
 public class InMemoryDroneRepository implements DroneRepository {
+
+    static Logger logger = Logger.getLogger("[DroneRepo]");
 
     private final Map<DroneId, Drone> store = new ConcurrentHashMap<>();
 
     @Override
     public void save(Drone drone) {
         store.put(drone.getId(), drone);
+        logger.log(Level.INFO, "save drone " + drone.getId().value() + " - status " + drone.status());
     }
 
     @Override

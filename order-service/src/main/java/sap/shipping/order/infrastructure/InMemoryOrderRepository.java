@@ -7,15 +7,20 @@ import sap.shipping.order.domain.OrderId;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Adapter
 public class InMemoryOrderRepository implements OrderRepository {
+
+    static Logger logger = Logger.getLogger("[OrderRepo]");
 
     private final Map<OrderId, Order> store = new ConcurrentHashMap<>();
 
     @Override
     public void save(Order order) {
         store.put(order.getId(), order);
+        logger.log(Level.INFO, "save order " + order.getId().value() + " - status " + order.status());
     }
 
     @Override

@@ -2,6 +2,8 @@ package sap.shipping.delivery.infrastructure;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -16,9 +18,12 @@ import sap.shipping.delivery.domain.DeliveryId;
 @Adapter
 public class DeliveryController {
 
+    static Logger logger = Logger.getLogger("[Delivery Service Controller]");
+
     private final DeliveryService deliveryService;
 
     public DeliveryController(DeliveryService deliveryService) {
+        logger.setLevel(Level.INFO);
         this.deliveryService = deliveryService;
     }
 
@@ -46,7 +51,9 @@ public class DeliveryController {
     }
 
     private void scheduleDelivery(RoutingContext ctx) {
+        logger.log(Level.INFO, "ScheduleDelivery request - " + ctx.currentRoute().getPath());
         var body = ctx.body().asJsonObject();
+        logger.log(Level.INFO, "Payload: " + body);
         try {
             var delivery = deliveryService.scheduleDelivery(
                 body.getString("orderId"),
@@ -64,6 +71,7 @@ public class DeliveryController {
     }
 
     private void startDelivery(RoutingContext ctx) {
+        logger.log(Level.INFO, "StartDelivery request - delivery: " + ctx.pathParam("id"));
         try {
             var delivery = deliveryService.startDelivery(new DeliveryId(ctx.pathParam("id")));
             ctx.response()
@@ -75,6 +83,7 @@ public class DeliveryController {
     }
 
     private void completeDelivery(RoutingContext ctx) {
+        logger.log(Level.INFO, "CompleteDelivery request - delivery: " + ctx.pathParam("id"));
         try {
             var delivery = deliveryService.completeDelivery(new DeliveryId(ctx.pathParam("id")));
             ctx.response()
@@ -86,6 +95,7 @@ public class DeliveryController {
     }
 
     private void trackDelivery(RoutingContext ctx) {
+        logger.log(Level.INFO, "TrackDelivery request - delivery: " + ctx.pathParam("id"));
         var delivery = deliveryService.trackDelivery(new DeliveryId(ctx.pathParam("id")));
         if (delivery.isPresent()) {
             ctx.response()
@@ -97,6 +107,7 @@ public class DeliveryController {
     }
 
     private void findByOrderId(RoutingContext ctx) {
+        logger.log(Level.INFO, "FindByOrderId request - order: " + ctx.pathParam("orderId"));
         var delivery = deliveryService.findByOrderId(ctx.pathParam("orderId"));
         if (delivery.isPresent()) {
             ctx.response()

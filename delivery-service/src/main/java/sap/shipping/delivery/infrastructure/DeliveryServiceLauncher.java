@@ -1,11 +1,16 @@
 package sap.shipping.delivery.infrastructure;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import sap.shipping.delivery.application.DeliveryService;
 ;
 
 public class DeliveryServiceLauncher extends AbstractVerticle {
+
+    static Logger logger = Logger.getLogger("[Delivery Service]");
 
     private static final int PORT = 8091;
 
@@ -23,6 +28,7 @@ public class DeliveryServiceLauncher extends AbstractVerticle {
 
     @Override
     public void start() {
+        logger.log(Level.INFO, "Delivery Service initializing...");
         var repo = new InMemoryDeliveryRepository();
         var droneProxy = new DroneServiceProxy(DRONE_HOST, DRONE_PORT);
         var orderProxy = new OrderServiceProxy(ORDER_HOST, ORDER_PORT);
@@ -33,7 +39,7 @@ public class DeliveryServiceLauncher extends AbstractVerticle {
         vertx.createHttpServer()
             .requestHandler(controller.createRouter(vertx))
             .listen(PORT)
-            .onSuccess(s -> System.out.println("Delivery Service started on port " + PORT));
+            .onSuccess(s -> logger.log(Level.INFO, "Delivery Service ready - port: " + PORT));
     }
 
     public static void main(String[] args) {

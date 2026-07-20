@@ -2,6 +2,8 @@ package sap.shipping.drone.infrastructure;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -16,9 +18,12 @@ import sap.shipping.drone.domain.DroneId;
 @Adapter
 public class DroneController {
 
+    static Logger logger = Logger.getLogger("[Drone Service Controller]");
+
     private final DroneService droneService;
 
     public DroneController(DroneService droneService) {
+        logger.setLevel(Level.INFO);
         this.droneService = droneService;
     }
 
@@ -47,8 +52,10 @@ public class DroneController {
     }
 
     private void registerDrone(RoutingContext ctx) {
+        logger.log(Level.INFO, "RegisterDrone request - " + ctx.currentRoute().getPath());
         try {
             var body = ctx.body().asJsonObject();
+            logger.log(Level.INFO, "Payload: " + body);
             var drone = droneService.registerDrone(
                 body.getDouble("maxWeightKg"),
                 body.getDouble("lat"),
@@ -63,6 +70,7 @@ public class DroneController {
     }
 
     private void findAvailable(RoutingContext ctx) {
+        logger.log(Level.INFO, "FindAvailableDrone request - " + ctx.request().query());
         double lat = Double.parseDouble(ctx.queryParam("lat").get(0));
         double lng = Double.parseDouble(ctx.queryParam("lng").get(0));
         double weightKg = Double.parseDouble(ctx.queryParam("weightKg").get(0));
@@ -81,6 +89,7 @@ public class DroneController {
     }
 
     private void assignDrone(RoutingContext ctx) {
+        logger.log(Level.INFO, "AssignDrone request - drone: " + ctx.pathParam("id"));
         try {
             var drone = droneService.assignDrone(new DroneId(ctx.pathParam("id")));
             ctx.response()
@@ -92,6 +101,7 @@ public class DroneController {
     }
 
     private void updateLocation(RoutingContext ctx) {
+        logger.log(Level.INFO, "UpdateLocation request - drone: " + ctx.pathParam("id"));
         var body = ctx.body().asJsonObject();
         try {
             droneService.updateLocation(
@@ -105,6 +115,7 @@ public class DroneController {
     }
 
     private void releaseDrone(RoutingContext ctx) {
+        logger.log(Level.INFO, "ReleaseDrone request - drone: " + ctx.pathParam("id"));
         try {
             var drone = droneService.releaseDrone(new DroneId(ctx.pathParam("id")));
             ctx.response()
@@ -116,6 +127,7 @@ public class DroneController {
     }
 
     private void getDrone(RoutingContext ctx) {
+        logger.log(Level.INFO, "GetDrone request - drone: " + ctx.pathParam("id"));
         var drone = droneService.getDrone(new DroneId(ctx.pathParam("id")));
         if (drone.isPresent()) {
             ctx.response()

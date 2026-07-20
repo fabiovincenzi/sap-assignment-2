@@ -4,9 +4,13 @@ import sap.shipping.common.exagonal.InBoundPort;
 import sap.shipping.delivery.domain.*;
 import sap.shipping.delivery.domain.events.DeliveryCompleted;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @InBoundPort
 public class DeliveryService {
+
+    static Logger logger = Logger.getLogger("[Delivery Service]");
 
     private final DeliveryRepository repository;
     private final DroneServicePort droneService;
@@ -23,12 +27,16 @@ public class DeliveryService {
         var route = new Route(pickupLat, pickupLng, deliveryLat, deliveryLng);
         var delivery = new Delivery(DeliveryId.generate(), orderId, route, weightKg);
         repository.save(delivery);
+        logger.log(Level.INFO, "schedule delivery " + delivery.getId().value() + " for order " + orderId);
 
         var droneId = droneService.requestAvailableDrone(pickupLat, pickupLng, weightKg);
-        droneId.ifPresent(id -> {
-            delivery.assignDrone(id);
+        if (droneId.isPresent()) {
+            delivery.assignDrone(droneId.get());
             repository.save(delivery);
-        });
+            logger.log(Level.INFO, "drone " + droneId.get() + " assigned to delivery " + delivery.getId().value());
+        } else {
+            logger.log(Level.WARNING, "no drone available for delivery " + delivery.getId().value());
+        }
 
         return delivery;
     }
@@ -38,6 +46,7 @@ public class DeliveryService {
             .orElseThrow(() -> new IllegalArgumentException("Delivery not found: " + deliveryId));
         delivery.startTransit();
         repository.save(delivery);
+        logger.log(Level.INFO, "start delivery " + deliveryId.value());
         return delivery;
     }
 
@@ -45,6 +54,8 @@ public class DeliveryService {
         repository.findByDroneId(droneId).ifPresent(delivery -> {
             delivery.updatePosition(lat, lng);
             repository.save(delivery);
+            logger.log(Level.INFO, "update position of delivery " + delivery.getId().value()
+                + " to (" + lat + ", " + lng + ")");
         });
     }
 
@@ -53,11 +64,14 @@ public class DeliveryService {
             .orElseThrow(() -> new IllegalArgumentException("Delivery not found: " + deliveryId));
         delivery.complete();
         repository.save(delivery);
+        logger.log(Level.INFO, "complete delivery " + deliveryId.value());
 
         delivery.pendingEvents().stream()
             .filter(e -> e instanceof DeliveryCompleted)
             .map(e -> (DeliveryCompleted) e)
             .forEach(e -> {
+                logger.log(Level.INFO, "notifying delivery-completed for order " + e.orderId()
+                    + " and releasing drone " + e.droneId());
                 orderService.notifyDeliveryCompleted(e.orderId());
                 droneService.releaseDrone(e.droneId());
             });

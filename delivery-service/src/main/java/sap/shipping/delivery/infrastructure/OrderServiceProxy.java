@@ -5,11 +5,16 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import sap.shipping.common.exagonal.Adapter;
 import sap.shipping.delivery.application.OrderServicePort;
 
 @Adapter
 public class OrderServiceProxy implements OrderServicePort {
+
+    static Logger logger = Logger.getLogger("[OrderServiceProxy]");
 
     private final String serviceURI;
 
@@ -27,7 +32,9 @@ public class OrderServiceProxy implements OrderServicePort {
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
 
-            client.send(request, HttpResponse.BodyHandlers.ofString());
+            logger.log(Level.INFO, "POST " + serviceURI + "/api/orders/" + orderId + "/complete");
+            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            logger.log(Level.INFO, "Response code: " + response.statusCode());
         } catch (Exception e) {
             e.printStackTrace();
         }

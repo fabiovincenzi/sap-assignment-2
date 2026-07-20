@@ -2,6 +2,8 @@ package sap.shipping.order.infrastructure;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -16,10 +18,13 @@ import sap.shipping.order.domain.*;
 @Adapter
 public class OrderController {
 
+    static Logger logger = Logger.getLogger("[Order Service Controller]");
+
     private final OrderService orderService;
     private final UserService userService;
 
     public OrderController(OrderService orderService, UserService userService) {
+        logger.setLevel(Level.INFO);
         this.orderService = orderService;
         this.userService = userService;
     }
@@ -50,6 +55,7 @@ public class OrderController {
     }
 
     private void register(RoutingContext ctx) {
+        logger.log(Level.INFO, "Register request - " + ctx.currentRoute().getPath());
         var body = ctx.body().asJsonObject();
         try {
             var user = userService.register(body.getString("username"), body.getString("password"));
@@ -62,6 +68,7 @@ public class OrderController {
     }
 
     private void login(RoutingContext ctx) {
+        logger.log(Level.INFO, "Login request - " + ctx.currentRoute().getPath());
         var body = ctx.body().asJsonObject();
         try {
             var user = userService.login(body.getString("username"), body.getString("password"));
@@ -74,7 +81,9 @@ public class OrderController {
     }
 
     private void createOrder(RoutingContext ctx) {
+        logger.log(Level.INFO, "CreateOrder request - " + ctx.currentRoute().getPath());
         var body = ctx.body().asJsonObject();
+        logger.log(Level.INFO, "Payload: " + body);
         try {
             var pickup = new Address(body.getString("pickupStreet"), body.getDouble("pickupLat"), body.getDouble("pickupLng"));
             var delivery = new Address(body.getString("deliveryStreet"), body.getDouble("deliveryLat"), body.getDouble("deliveryLng"));
@@ -89,6 +98,7 @@ public class OrderController {
     }
 
     private void confirmOrder(RoutingContext ctx) {
+        logger.log(Level.INFO, "ConfirmOrder request - order: " + ctx.pathParam("id"));
         try {
             var order = orderService.confirmOrder(new OrderId(ctx.pathParam("id")));
             ctx.response()
@@ -100,6 +110,7 @@ public class OrderController {
     }
 
     private void cancelOrder(RoutingContext ctx) {
+        logger.log(Level.INFO, "CancelOrder request - order: " + ctx.pathParam("id"));
         try {
             var order = orderService.cancelOrder(new OrderId(ctx.pathParam("id")));
             ctx.response()
@@ -111,6 +122,7 @@ public class OrderController {
     }
 
     private void completeOrder(RoutingContext ctx) {
+        logger.log(Level.INFO, "CompleteOrder request - order: " + ctx.pathParam("id"));
         try {
             orderService.completeOrder(new OrderId(ctx.pathParam("id")));
             ctx.response().setStatusCode(200).end();
@@ -120,6 +132,7 @@ public class OrderController {
     }
 
     private void getOrder(RoutingContext ctx) {
+        logger.log(Level.INFO, "GetOrder request - order: " + ctx.pathParam("id"));
         var order = orderService.getOrder(new OrderId(ctx.pathParam("id")));
         if (order.isPresent()) {
             ctx.response()

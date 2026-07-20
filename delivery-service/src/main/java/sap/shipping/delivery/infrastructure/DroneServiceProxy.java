@@ -9,9 +9,13 @@ import io.vertx.core.json.JsonObject;
 import sap.shipping.common.exagonal.Adapter;
 import sap.shipping.delivery.application.DroneServicePort;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Adapter
 public class DroneServiceProxy implements DroneServicePort {
+
+    static Logger logger = Logger.getLogger("[DroneServiceProxy]");
 
     private final String serviceURI;
 
@@ -30,7 +34,9 @@ public class DroneServiceProxy implements DroneServicePort {
                 .GET()
                 .build();
 
+            logger.log(Level.INFO, "GET " + serviceURI + "/api/drones/available - weight: " + weightKg);
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            logger.log(Level.INFO, "Response code: " + response.statusCode());
 
             if (response.statusCode() == 200) {
                 var body = new JsonObject(response.body());
@@ -38,6 +44,7 @@ public class DroneServiceProxy implements DroneServicePort {
             }
             return Optional.empty();
         } catch (Exception e) {
+            logger.log(Level.WARNING, "drone-service not reachable at " + serviceURI + " - " + e.getMessage());
             return Optional.empty();
         }
     }
@@ -52,7 +59,9 @@ public class DroneServiceProxy implements DroneServicePort {
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
 
-            client.send(request, HttpResponse.BodyHandlers.ofString());
+            logger.log(Level.INFO, "POST " + serviceURI + "/api/drones/" + droneId + "/release");
+            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            logger.log(Level.INFO, "Response code: " + response.statusCode());
         } catch (Exception e) {
             e.printStackTrace();
         }

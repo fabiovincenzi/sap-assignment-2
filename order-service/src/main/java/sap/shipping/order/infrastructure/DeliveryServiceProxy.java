@@ -5,6 +5,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import io.vertx.core.json.JsonObject;
 import sap.shipping.common.exagonal.Adapter;
@@ -13,6 +15,8 @@ import sap.shipping.order.domain.events.OrderConfirmed;
 
 @Adapter
 public class DeliveryServiceProxy implements DeliveryServicePort {
+
+    static Logger logger = Logger.getLogger("[DeliveryServiceProxy]");
 
     private final String serviceURI;
 
@@ -41,7 +45,9 @@ public class DeliveryServiceProxy implements DeliveryServicePort {
                 .POST(BodyPublishers.ofString(body.toString()))
                 .build();
 
-            client.send(request, HttpResponse.BodyHandlers.ofString());
+            logger.log(Level.INFO, "POST " + serviceURI + "/api/deliveries - order: " + event.orderId().value());
+            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            logger.log(Level.INFO, "Response code: " + response.statusCode());
         } catch (Exception e) {
             e.printStackTrace();
         }

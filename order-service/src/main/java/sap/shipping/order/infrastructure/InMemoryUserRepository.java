@@ -7,15 +7,20 @@ import sap.shipping.order.domain.user.UserId;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Adapter
 public class InMemoryUserRepository implements UserRepository {
+
+    static Logger logger = Logger.getLogger("[UserRepo]");
 
     private final Map<UserId, User> store = new ConcurrentHashMap<>();
 
     @Override
     public void save(User user) {
         store.put(user.getId(), user);
+        logger.log(Level.INFO, "save user " + user.username());
     }
 
     @Override

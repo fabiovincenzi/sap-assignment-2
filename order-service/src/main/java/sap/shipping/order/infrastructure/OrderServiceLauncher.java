@@ -1,5 +1,8 @@
 package sap.shipping.order.infrastructure;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
 import sap.shipping.order.application.OrderService;
@@ -7,6 +10,8 @@ import sap.shipping.order.application.UserService;
 ;
 
 public class OrderServiceLauncher extends AbstractVerticle {
+
+    static Logger logger = Logger.getLogger("[Order Service]");
 
     private static final int PORT = 8090;
 
@@ -22,6 +27,7 @@ public class OrderServiceLauncher extends AbstractVerticle {
 
     @Override
     public void start() {
+        logger.log(Level.INFO, "Order Service initializing...");
         var orderRepo = new InMemoryOrderRepository();
         var userRepo = new InMemoryUserRepository();
         var deliveryProxy = new DeliveryServiceProxy(DELIVERY_HOST, DELIVERY_PORT);
@@ -33,7 +39,7 @@ public class OrderServiceLauncher extends AbstractVerticle {
         vertx.createHttpServer()
             .requestHandler(controller.createRouter(vertx))
             .listen(PORT)
-            .onSuccess(s -> System.out.println("Order Service started on port " + PORT));
+            .onSuccess(s -> logger.log(Level.INFO, "Order Service ready - port: " + PORT));
     }
 
     public static void main(String[] args) {

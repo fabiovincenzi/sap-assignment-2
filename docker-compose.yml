@@ -1,0 +1,55 @@
+name: shipping-on-the-air
+
+services:
+  order-service:
+    image: shipping-order-service
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
+    container_name: order-01
+    networks:
+      - shipping_network
+    ports:
+      - "8090:8090"
+    expose:
+      - 8090
+    environment:
+      - DELIVERY_HOST=delivery-service
+      - DELIVERY_PORT=8091
+
+  delivery-service:
+    image: shipping-delivery-service
+    build:
+      context: .
+      dockerfile: delivery-service/Dockerfile
+    container_name: delivery-01
+    networks:
+      - shipping_network
+    ports:
+      - "8091:8091"
+    expose:
+      - 8091
+    environment:
+      - DRONE_HOST=drone-service
+      - DRONE_PORT=8092
+      - ORDER_HOST=order-service
+      - ORDER_PORT=8090
+
+  drone-service:
+    image: shipping-drone-service
+    build:
+      context: .
+      dockerfile: drone-service/Dockerfile
+    container_name: drone-01
+    networks:
+      - shipping_network
+    ports:
+      - "8092:8092"
+    expose:
+      - 8092
+    environment:
+      - DELIVERY_HOST=delivery-service
+      - DELIVERY_PORT=8091
+
+networks:
+  shipping_network:

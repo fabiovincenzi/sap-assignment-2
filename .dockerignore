@@ -1,0 +1,11 @@
+.git/
+.gitignore
+build/
+*/build/
+.gradle/
+*/.gradle/
+report/
+doc/
+*.mov
+.idea/
+.vscode/

@@ -51,5 +51,25 @@ services:
       - DELIVERY_HOST=delivery-service
       - DELIVERY_PORT=8091
 
+  api-gateway:
+    image: shipping-api-gateway
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: gateway-01
+    networks:
+      - shipping_network
+    ports:
+      - "8080:8080"
+    expose:
+      - 8080
+    environment:
+      - ORDER_HOST=order-service
+      - ORDER_PORT=8090
+      - DELIVERY_HOST=delivery-service
+      - DELIVERY_PORT=8091
+      - DRONE_HOST=drone-service
+      - DRONE_PORT=8092
+
 networks:
   shipping_network:

@@ -16,6 +16,13 @@ services:
     environment:
       - DELIVERY_HOST=delivery-service
       - DELIVERY_PORT=8091
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8090/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
 
   delivery-service:
     image: shipping-delivery-service
@@ -34,6 +41,13 @@ services:
       - DRONE_PORT=8092
       - ORDER_HOST=order-service
       - ORDER_PORT=8090
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8091/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
 
   drone-service:
     image: shipping-drone-service
@@ -50,6 +64,13 @@ services:
     environment:
       - DELIVERY_HOST=delivery-service
       - DELIVERY_PORT=8091
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8092/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
 
   api-gateway:
     image: shipping-api-gateway
@@ -70,6 +91,13 @@ services:
       - DELIVERY_PORT=8091
       - DRONE_HOST=drone-service
       - DRONE_PORT=8092
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
 
 networks:
   shipping_network:

@@ -6,6 +6,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -48,10 +49,27 @@ public class OrderController {
         router.get("/api/orders/:id").handler(this::getOrder);
         router.post("/api/orders/:id/complete").handler(this::completeOrder);
 
+        router.get("/health").handler(this::healthCheck);
+
         router.get("/api/openapi.yaml").handler(this::serveOpenApi);
         router.get("/swagger-ui").handler(this::serveSwaggerUi);
 
         return router;
+    }
+
+    /**
+     * Health Check API (observability pattern). Reports whether the service is
+     * able to handle requests. The repositories are in-memory, so there is no
+     * external dependency to probe: with a real database, this handler would
+     * run a test query and add its outcome to "checks".
+     */
+    private void healthCheck(RoutingContext ctx) {
+        var reply = new JsonObject()
+            .put("status", "UP")
+            .put("checks", new JsonArray());
+        ctx.response()
+            .putHeader("Content-Type", "application/json")
+            .end(reply.encode());
     }
 
     private void register(RoutingContext ctx) {

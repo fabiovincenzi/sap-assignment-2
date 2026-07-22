@@ -1,0 +1,310 @@
+{
+  "info": {
+    "name": "Shipping on the Air - Assignment 2",
+    "description": "Collezione per testare il sistema fino all'API Gateway.\n\nLa cartella 'API Gateway' contiene il flusso completo che passa SOLO dal gateway (porta 8080): gli id vengono catturati automaticamente e riusati negli step successivi. Esegui le richieste in ordine (o usa il Collection Runner).\n\nLa cartella 'Servizi diretti (debug)' chiama i singoli servizi sulle loro porte, utile per debug.\n\nAvvia prima il sistema:  docker compose up --build",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "API Gateway (flusso completo)",
+      "item": [
+        {
+          "name": "1. Registra utente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('userId', j.userId);",
+                  "pm.test('ha userId', () => pm.expect(j.userId).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"fabio\",\n  \"password\": \"secret123\"\n}"
+            },
+            "url": {
+              "raw": "{{gwUrl}}/users/register",
+              "host": ["{{gwUrl}}"],
+              "path": ["users", "register"]
+            }
+          }
+        },
+        {
+          "name": "2. Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"fabio\",\n  \"password\": \"secret123\"\n}"
+            },
+            "url": {
+              "raw": "{{gwUrl}}/users/login",
+              "host": ["{{gwUrl}}"],
+              "path": ["users", "login"]
+            }
+          }
+        },
+        {
+          "name": "3. Registra drone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('droneId', j.id);",
+                  "pm.test('drone AVAILABLE', () => pm.expect(j.status).to.eql('AVAILABLE'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maxWeightKg\": 5.0,\n  \"lat\": 44.14,\n  \"lng\": 12.24\n}"
+            },
+            "url": {
+              "raw": "{{gwUrl}}/drones",
+              "host": ["{{gwUrl}}"],
+              "path": ["drones"]
+            }
+          }
+        },
+        {
+          "name": "4. Crea ordine",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set('orderId', j.id);",
+                  "pm.test('ordine PENDING', () => pm.expect(j.status).to.eql('PENDING'));",
+                  "console.log('orderId =', j.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"fabio\",\n  \"pickupStreet\": \"Via Cesare Pavese 50\",\n  \"pickupLat\": 44.14,\n  \"pickupLng\": 12.24,\n  \"deliveryStreet\": \"Piazza Saffi 1\",\n  \"deliveryLat\": 44.22,\n  \"deliveryLng\": 12.04,\n  \"weightKg\": 2.5\n}"
+            },
+            "url": {
+              "raw": "{{gwUrl}}/orders",
+              "host": ["{{gwUrl}}"],
+              "path": ["orders"]
+            }
+          }
+        },
+        {
+          "name": "5. Dettaglio ordine",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gwUrl}}/orders/{{orderId}}",
+              "host": ["{{gwUrl}}"],
+              "path": ["orders", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "6. Tracking (prima della conferma)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('nessuna consegna ancora', () => pm.expect(j.hasDelivery).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gwUrl}}/tracking/{{orderId}}",
+              "host": ["{{gwUrl}}"],
+              "path": ["tracking", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "7. Conferma ordine",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('ordine CONFIRMED', () => pm.expect(j.status).to.eql('CONFIRMED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "" },
+            "url": {
+              "raw": "{{gwUrl}}/orders/{{orderId}}/confirm",
+              "host": ["{{gwUrl}}"],
+              "path": ["orders", "{{orderId}}", "confirm"]
+            }
+          }
+        },
+        {
+          "name": "8. Tracking aggregato (dopo la conferma)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('consegna presente', () => pm.expect(j.hasDelivery).to.eql(true));",
+                  "pm.test('drone assegnato', () => pm.expect(j.droneId).to.be.a('string'));",
+                  "pm.test('unisce order + delivery', () => {",
+                  "  pm.expect(j.orderStatus).to.eql('CONFIRMED');",
+                  "  pm.expect(j).to.have.property('estimatedMinutes');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gwUrl}}/tracking/{{orderId}}",
+              "host": ["{{gwUrl}}"],
+              "path": ["tracking", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "9. Tracking ordine inesistente (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gwUrl}}/tracking/does-not-exist",
+              "host": ["{{gwUrl}}"],
+              "path": ["tracking", "does-not-exist"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Servizi diretti (debug)",
+      "description": "Chiamate ai singoli servizi sulle loro porte, senza passare dal gateway. Utili per debug.",
+      "item": [
+        {
+          "name": "Order - dettaglio ordine",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{orderUrl}}/orders/{{orderId}}",
+              "host": ["{{orderUrl}}"],
+              "path": ["orders", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delivery - consegna per ordine",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{deliveryUrl}}/deliveries/order/{{orderId}}",
+              "host": ["{{deliveryUrl}}"],
+              "path": ["deliveries", "order", "{{orderId}}"]
+            }
+          }
+        },
+        {
+          "name": "Drone - dettaglio drone",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{droneUrl}}/drones/{{droneId}}",
+              "host": ["{{droneUrl}}"],
+              "path": ["drones", "{{droneId}}"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "gwUrl", "value": "http://localhost:8080/api/v1" },
+    { "key": "orderUrl", "value": "http://localhost:8090/api" },
+    { "key": "deliveryUrl", "value": "http://localhost:8091/api" },
+    { "key": "droneUrl", "value": "http://localhost:8092/api" },
+    { "key": "orderId", "value": "" },
+    { "key": "droneId", "value": "" },
+    { "key": "userId", "value": "" }
+  ]
+}

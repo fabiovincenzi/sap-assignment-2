@@ -5,6 +5,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -76,7 +77,24 @@ public class GatewayController {
         // Tracking (aggregation of Order + Delivery)
         router.get(API + "/tracking/:orderId").handler(this::getTracking);
 
+        // Health Check API (infrastructure endpoint, unversioned)
+        router.get("/health").handler(this::healthCheck);
+
         return router;
+    }
+
+    /**
+     * Health Check API (observability pattern): reports whether the gateway is
+     * able to handle requests. Kept simple (always UP) like the course lab; a
+     * richer variant could probe the downstream services' own /health.
+     */
+    private void healthCheck(RoutingContext ctx) {
+        var reply = new JsonObject()
+            .put("status", "UP")
+            .put("checks", new JsonArray());
+        ctx.response()
+            .putHeader("Content-Type", "application/json")
+            .end(reply.encode());
     }
 
     /* ---------- Users ---------- */

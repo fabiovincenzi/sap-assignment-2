@@ -49,11 +49,24 @@ Gli endpoint di **coreografia interna** (scheduleDelivery, drone-position, assig
 - Nessuna auth (non richiesta dall'assignment). Evoluzione naturale: autenticazione al gateway con propagazione di un JWT ai servizi (D35 + D73, lab notes Production-Ready).
 - Nessun timeout/circuit breaker sulle chiamate → aggancio naturale col Circuit Breaker (vedi 1.4).
 
-### 1.2 Observability — Health Check API ⬜
+### 1.2 Observability — Health Check API ✅
 
 **Cos'è (D40 / lab notes Production-Ready, slide 28-32):** endpoint `/health` che dice se il servizio è *pronto a lavorare*, non solo *acceso*. Un servizio può girare ma essere inutilizzabile (dipendenza giù, ancora in avvio). L'infrastruttura interroga `/health` e smette di mandare traffico / riavvia se non sano.
 
-**Piano:** endpoint `/health` su ogni servizio + gateway; blocco `healthcheck:` nel `docker-compose.yml` (`curl --fail http://.../health`). Modello dal **Lab 8**.
+**Cosa abbiamo implementato:**
+- Endpoint `GET /health` su **tutti e 4** i componenti (order, delivery, drone, gateway), che risponde `{"status":"UP","checks":[]}` — formato **MicroProfile Health** come il Lab 8 (`status` + array `checks`).
+- Blocco `healthcheck:` nel `docker-compose.yml` per ciascun servizio (`curl --fail http://localhost:PORT/health`) + `restart: unless-stopped`.
+- Nei Dockerfile: installato `curl` nell'immagine di runtime (`eclipse-temurin:17-jre` non lo include, a differenza dell'immagine Maven del lab).
+- **Verificato:** i 4 endpoint rispondono UP; `docker compose ps` marca tutti i container `(healthy)`.
+
+**Nota concettuale (slide 31):** un health check "serio" verifica le dipendenze (es. query di prova sul DB). I nostri servizi hanno **repository in-memory, nessuna dipendenza esterna** → `UP` fisso è *onesto*, non pigro: con un DB reale l'handler eseguirebbe una query di test e ne metterebbe l'esito in `checks`.
+
+**Differenze consapevoli rispetto al Lab 8 (da citare nel report):**
+- Health check su **tutti e 4** i servizi, non solo sul gateway (il lab lo mette solo su `ttt-api-gateway` come esempio; la consegna chiede di instrumentare i microservizi).
+- `test` in forma *exec* `["CMD","curl",...]` invece della forma *shell* del lab (non passa da una shell, più robusto).
+- Host `localhost` invece del nome del servizio: è un **self-check**, non dipende dal DNS della rete.
+- Tempi più corti (`interval 15s`, `start_period 20s` vs `1m30s`/`40s` del lab) per rendere lo stato `(healthy)` visibile in fretta durante la demo.
+- **`restart: unless-stopped`** (restart policy nativa di Docker) invece del container `autoheal` del lab: il README del Lab 8 stesso ammette che autoheal *"is not working properly"*; la restart policy nativa è più semplice e affidabile. Autoheal citabile come alternativa.
 
 ### 1.3 Observability — Application Metrics ⬜
 

@@ -1,5 +1,6 @@
 build/
 .gradle/
+bin/
 
 # LaTeX
 report/*.aux
@@ -9,6 +10,9 @@ report/*.toc
 report/*.fls
 report/*.fdb_latexmk
 report/*.synctex.gz
+
+# OS
+.DS_Store
 
 # IDE
 .idea/

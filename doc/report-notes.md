@@ -75,7 +75,11 @@ Gli endpoint di **coreografia interna** (scheduleDelivery, drone-position, assig
 **Cosa abbiamo implementato finora:**
 - **Infrastruttura (compose)** ✅: `prometheus.yml` alla root (stile Lab 8, un job `static_configs` per servizio) + container `prometheus-01` (UI su `:9090`). Metriche su **porta dedicata** per servizio (order :9490, delivery :9491, gateway :9492, drone :9493), non su una rotta della porta applicativa.
 - **Order Service** ✅ (validato end-to-end in locale): counter `orders_placed_total` che sale a ogni ordine creato. Client `io.prometheus:prometheus-metrics-{core,instrumentation-jvm,exporter-httpserver}:1.3.3`.
-- Ancora da instrumentare: delivery (`deliveries_in_progress` gauge), drone (`drones_available` gauge), gateway (`gateway_requests_total` counter).
+- **Delivery Service** ✅ (inc validato in locale: gauge 0→2 dopo due schedule): gauge `deliveries_in_progress`, `inc()` in `scheduleDelivery`, `dec()` in `completeDelivery`. Observer con **due metodi** (`notifyDeliveryScheduled`/`notifyDeliveryCompleted`) perché un gauge ha due transizioni, a differenza del counter monotòno di order. Nota: il `dec` non è stato esercitato end-to-end perché senza drone-service la consegna resta `SCHEDULED` e non può passare a `IN_TRANSIT`/`DELIVERED` (vincolo del ciclo di vita, non delle metriche).
+- **Caveat gauge da citare:** una consegna che **fallisce** (`DeliveryFailed`) oggi non decrementa il gauge (gestiamo solo lo schedule→complete); con più tempo si aggancerebbe anche l'evento di fallimento per evitare che il gauge sovrastimi le consegne attive.
+- Ancora da instrumentare: drone (`drones_available` gauge), gateway (`gateway_requests_total` counter).
+
+**Counter vs Gauge (differenza di design osservata implementando):** il counter di order ha **un solo** metodo observer (`notifyOrderCreated` → `inc()`), è monotòno. Il gauge di delivery ne ha **due** (`inc` allo schedule, `dec` al complete) perché rappresenta una quantità istantanea che sale e scende. Stesso schema esagonale (port `@OutBoundPort` + adapter `@Adapter`), semantica della metrica diversa.
 
 **Integrazione nell'esagono (il punto di design, diagrammi in `doc/diagrams/`):** le metriche sono una preoccupazione tecnica, quindi vivono su un **adapter al bordo** e il core non conosce Prometheus. Concretamente:
 - nuovo **port** `OrderServiceObserver` (`@OutBoundPort`) nell'application layer: il core *notifica* verso l'esterno (driven/secondary port, come il repository);

@@ -15,6 +15,7 @@ public class GatewayLauncher extends AbstractVerticle {
     static Logger logger = Logger.getLogger("[API Gateway]");
 
     private static final int PORT = 8080;
+    private static final int METRICS_PORT = 9492;
 
     /* Externalized configuration: defaults target a manual local deployment,
        the docker-compose file overrides them with the service container names. */
@@ -37,7 +38,15 @@ public class GatewayLauncher extends AbstractVerticle {
         var deliveryProxy = new DeliveryServiceProxy(DELIVERY_HOST, DELIVERY_PORT);
         var droneProxy = new DroneServiceProxy(DRONE_HOST, DRONE_PORT);
 
-        var controller = new GatewayController(orderProxy, deliveryProxy, droneProxy);
+        GatewayMetrics metrics = null;
+        try {
+            metrics = new GatewayMetrics(METRICS_PORT);
+            logger.log(Level.INFO, "Prometheus metrics server ready - port: " + METRICS_PORT);
+        } catch (ObsMetricServerException e) {
+            logger.log(Level.SEVERE, "Failed to start Prometheus metrics server - " + e.getMessage());
+        }
+
+        var controller = new GatewayController(orderProxy, deliveryProxy, droneProxy, metrics);
 
         vertx.createHttpServer()
             .requestHandler(controller.createRouter(vertx))

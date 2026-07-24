@@ -13,4 +13,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 WORKDIR /app
 COPY --from=build /project/api-gateway/build/install/api-gateway /app
 EXPOSE 8080
+EXPOSE 9492
 CMD ["/app/bin/api-gateway"]

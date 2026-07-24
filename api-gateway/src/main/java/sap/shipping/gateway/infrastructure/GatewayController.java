@@ -41,18 +41,27 @@ public class GatewayController {
     private final OrderServicePort orderService;
     private final DeliveryServicePort deliveryService;
     private final DroneServicePort droneService;
+    private final GatewayMetrics metrics;
 
     public GatewayController(OrderServicePort orderService,
                              DeliveryServicePort deliveryService,
-                             DroneServicePort droneService) {
+                             DroneServicePort droneService,
+                             GatewayMetrics metrics) {
         logger.setLevel(Level.INFO);
         this.orderService = orderService;
         this.deliveryService = deliveryService;
         this.droneService = droneService;
+        this.metrics = metrics;
     }
 
     public Router createRouter(Vertx vertx) {
         var router = Router.router(vertx);
+        if (metrics != null) {
+            router.route().handler(ctx -> {
+                metrics.incRequest();
+                ctx.next();
+            });
+        }
         router.route().handler(BodyHandler.create());
         router.route().failureHandler(ctx -> {
             var error = ctx.failure();

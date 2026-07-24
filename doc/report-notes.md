@@ -68,11 +68,23 @@ Gli endpoint di **coreografia interna** (scheduleDelivery, drone-position, assig
 - Tempi più corti (`interval 15s`, `start_period 20s` vs `1m30s`/`40s` del lab) per rendere lo stato `(healthy)` visibile in fretta durante la demo.
 - **`restart: unless-stopped`** (restart policy nativa di Docker) invece del container `autoheal` del lab: il README del Lab 8 stesso ammette che autoheal *"is not working properly"*; la restart policy nativa è più semplice e affidabile. Autoheal citabile come alternativa.
 
-### 1.3 Observability — Application Metrics ⬜
+### 1.3 Observability — Application Metrics 🟡
 
-**Cos'è (D40 / lab notes, slide 43-47):** contatori e gauge esposti a un server di metriche. Modello **pull**: Prometheus interroga un endpoint `/metrics`; Grafana visualizza.
+**Cos'è (D40 / lab notes, slide 43-47):** contatori e gauge esposti a un server di metriche. Modello **pull**: Prometheus interroga un endpoint `/metrics`; (Grafana visualizza — non containerizzato, vedi sotto).
 
-**Piano:** client Prometheus (`io.prometheus:prometheus-metrics-core`, come nel **Lab 8**), Prometheus + Grafana containerizzati nel compose. Metriche candidate: `orders_created_total` (counter), `deliveries_in_progress` (gauge), `gateway_requests_total` (counter sul gateway).
+**Cosa abbiamo implementato finora:**
+- **Infrastruttura (compose)** ✅: `prometheus.yml` alla root (stile Lab 8, un job `static_configs` per servizio) + container `prometheus-01` (UI su `:9090`). Metriche su **porta dedicata** per servizio (order :9490, delivery :9491, gateway :9492, drone :9493), non su una rotta della porta applicativa.
+- **Order Service** ✅ (validato end-to-end in locale): counter `orders_placed_total` che sale a ogni ordine creato. Client `io.prometheus:prometheus-metrics-{core,instrumentation-jvm,exporter-httpserver}:1.3.3`.
+- Ancora da instrumentare: delivery (`deliveries_in_progress` gauge), drone (`drones_available` gauge), gateway (`gateway_requests_total` counter).
+
+**Integrazione nell'esagono (il punto di design, diagrammi in `doc/diagrams/`):** le metriche sono una preoccupazione tecnica, quindi vivono su un **adapter al bordo** e il core non conosce Prometheus. Concretamente:
+- nuovo **port** `OrderServiceObserver` (`@OutBoundPort`) nell'application layer: il core *notifica* verso l'esterno (driven/secondary port, come il repository);
+- `OrderService` tiene una lista di observer + `addObserver(...)` e chiama `notifyOrderCreated(...)` nel caso d'uso di creazione;
+- **adapter** `PrometheusOrderServiceObserver` (`@Adapter`, infrastructure) implementa il port: possiede il `Counter` e un `HTTPServer` Prometheus sulla porta dedicata. `import io.prometheus...` compare **solo** qui.
+- Sostituire Prometheus (es. con OpenTelemetry) = nuovo adapter, **zero righe nel core**. Stessa dependency inversion di repository e proxy.
+- Rispetto al **Lab 8**: là il `service.addObserver(obs)` c'era già; qui il meccanismo observer è stato **aggiunto** (le classi evento di dominio esistevano, ma non un port di pubblicazione). Questo stesso port è la base per l'**Event Sourcing** (1.4) → lavoro non sprecato.
+
+**Gotcha da citare nel report (naming Prometheus):** la metrica **non** può chiamarsi `orders_created_total`: il client rimuove il suffisso convenzionale `_total` dei counter, resta `orders_created`, e `_created` è un **suffisso riservato** (Prometheus genera in automatico la serie `<name>_created` col timestamp di creazione del counter) → `IllegalArgumentException`. Rinominata in `orders_placed_total`. Regola generale: per un counter dare il nome-base (con o senza `_total`), evitando i suffissi riservati `_created`, `_total`, `_sum`, `_count`, `_bucket`, `_gsum`, `_gcount`.
 
 ### 1.4 Event Sourcing ⬜ (applicato a UN servizio)
 

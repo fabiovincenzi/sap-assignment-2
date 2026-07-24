@@ -1,0 +1,101 @@
+<mxfile host="app.diagrams.net" version="24.0.0">
+  <diagram id="order-metrics-hex" name="Order Metrics - Hexagonal">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="640" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===== background lanes ===== -->
+        <mxCell id="lane_in" value="INBOUND / DRIVING&#10;(infrastructure)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#B3B3B3;dashed=1;verticalAlign=top;fontStyle=2;fontColor=#666666;align=center;" vertex="1" parent="1">
+          <mxGeometry x="180" y="60" width="220" height="530" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_core" value="CORE&#10;(technology-agnostic)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#6C8EBF;verticalAlign=top;fontStyle=1;fontColor=#3B5A8A;align=center;" vertex="1" parent="1">
+          <mxGeometry x="430" y="60" width="330" height="530" as="geometry" />
+        </mxCell>
+        <mxCell id="lane_out" value="OUTBOUND / DRIVEN&#10;(infrastructure)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#B3B3B3;dashed=1;verticalAlign=top;fontStyle=2;fontColor=#666666;align=center;" vertex="1" parent="1">
+          <mxGeometry x="800" y="60" width="300" height="530" as="geometry" />
+        </mxCell>
+
+        <!-- ===== external actors ===== -->
+        <mxCell id="client" value="HTTP client" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="40" y="300" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="delivery" value="delivery-service" style="ellipse;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="300" width="130" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="prom" value="Prometheus&#10;(scrapes /metrics)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;fillColor=#FFE6CC;strokeColor=#D79B00;" vertex="1" parent="1">
+          <mxGeometry x="1145" y="400" width="120" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ===== inbound adapter ===== -->
+        <mxCell id="ctrl" value="OrderController  &#171;@Adapter&#187;&#10;HTTP :8090  +  /health" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="200" y="295" width="185" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ===== core: application ===== -->
+        <mxCell id="svc" value="OrderService  &#171;@InBoundPort&#187;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D5E8D4;strokeColor=#82B366;" vertex="1" parent="1">
+          <mxGeometry x="450" y="115" width="290" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="pRepo" value="OrderRepository  &#171;@OutBoundPort&#187;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;" vertex="1" parent="1">
+          <mxGeometry x="450" y="245" width="290" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="pDel" value="DeliveryServicePort  &#171;@OutBoundPort&#187;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;" vertex="1" parent="1">
+          <mxGeometry x="450" y="315" width="290" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="pObs" value="OrderServiceObserver  &#171;@OutBoundPort&#187;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAE8FC;strokeColor=#6C8EBF;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="450" y="385" width="290" height="46" as="geometry" />
+        </mxCell>
+        <!-- ===== core: domain ===== -->
+        <mxCell id="agg" value="Order  &#171;@Aggregate&#187;&#10;OrderConfirmed / OrderCancelled  &#171;@DomainEvent&#187;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1D5E7;strokeColor=#9673A6;" vertex="1" parent="1">
+          <mxGeometry x="450" y="500" width="290" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ===== outbound adapters ===== -->
+        <mxCell id="repo" value="InMemoryOrderRepository  &#171;@Adapter&#187;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="820" y="245" width="260" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="proxy" value="DeliveryServiceProxy  &#171;@Adapter&#187;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="820" y="315" width="260" height="46" as="geometry" />
+        </mxCell>
+        <mxCell id="obs" value="PrometheusOrderServiceObserver  &#171;@Adapter&#187;&#10;Counter orders_placed_total&#10;HTTPServer :9490" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE6CC;strokeColor=#D79B00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="810" y="380" width="280" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ===== edges ===== -->
+        <mxCell id="e_client_ctrl" value="POST /api/orders" style="endArrow=block;html=1;fontSize=10;" edge="1" parent="1" source="client" target="ctrl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ctrl_svc" value="calls" style="endArrow=block;html=1;fontSize=10;" edge="1" parent="1" source="ctrl" target="svc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_svc_agg" value="uses" style="endArrow=block;html=1;fontSize=10;" edge="1" parent="1" source="svc" target="agg">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_svc_repo" value="uses" style="endArrow=block;html=1;fontSize=10;" edge="1" parent="1" source="svc" target="pRepo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_svc_del" value="uses" style="endArrow=block;html=1;fontSize=10;" edge="1" parent="1" source="svc" target="pDel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_svc_obs" value="notifies" style="endArrow=block;html=1;fontSize=10;strokeColor=#D79B00;fontColor=#D79B00;fontStyle=1;" edge="1" parent="1" source="svc" target="pObs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_repo_impl" value="implements" style="endArrow=block;endFill=0;dashed=1;html=1;fontSize=10;" edge="1" parent="1" source="repo" target="pRepo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_proxy_impl" value="implements" style="endArrow=block;endFill=0;dashed=1;html=1;fontSize=10;" edge="1" parent="1" source="proxy" target="pDel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_obs_impl" value="implements" style="endArrow=block;endFill=0;dashed=1;html=1;fontSize=10;strokeColor=#D79B00;" edge="1" parent="1" source="obs" target="pObs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_proxy_del" value="REST" style="endArrow=block;html=1;fontSize=10;" edge="1" parent="1" source="proxy" target="delivery">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_prom_obs" value="GET :9490/metrics" style="endArrow=block;html=1;fontSize=10;strokeColor=#D79B00;fontColor=#D79B00;fontStyle=1;" edge="1" parent="1" source="prom" target="obs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

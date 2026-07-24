@@ -13,4 +13,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 WORKDIR /app
 COPY --from=build /project/drone-service/build/install/drone-service /app
 EXPOSE 8092
+EXPOSE 9493
 CMD ["/app/bin/drone-service"]

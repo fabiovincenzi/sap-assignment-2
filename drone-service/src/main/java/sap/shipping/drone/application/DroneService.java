@@ -2,7 +2,9 @@ package sap.shipping.drone.application;
 
 import sap.shipping.common.exagonal.InBoundPort;
 import sap.shipping.drone.domain.*;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,16 +16,22 @@ public class DroneService {
 
     private final DroneRepository repository;
     private final DeliveryServicePort deliveryService;
+    private final List<DroneServiceObserver> observers = new ArrayList<>();
 
     public DroneService(DroneRepository repository, DeliveryServicePort deliveryService) {
         this.repository = repository;
         this.deliveryService = deliveryService;
     }
 
+    public void addObserver(DroneServiceObserver observer) {
+        observers.add(observer);
+    }
+
     public Drone registerDrone(double maxWeightKg, double lat, double lng) {
         var drone = new Drone(DroneId.generate(), maxWeightKg, new Location(lat, lng));
         repository.save(drone);
         logger.log(Level.INFO, "register new drone " + drone.getId().value() + " - max weight " + maxWeightKg + "kg");
+        observers.forEach(o -> o.notifyDroneAvailable(drone.getId().value()));
         return drone;
     }
 
@@ -43,6 +51,7 @@ public class DroneService {
         drone.assignToDelivery();
         repository.save(drone);
         logger.log(Level.INFO, "assign drone " + droneId.value() + " to a delivery");
+        observers.forEach(o -> o.notifyDroneAssigned(droneId.value()));
         drone.clearEvents();
         return drone;
     }
@@ -63,6 +72,7 @@ public class DroneService {
         drone.release();
         repository.save(drone);
         logger.log(Level.INFO, "release drone " + droneId.value());
+        observers.forEach(o -> o.notifyDroneAvailable(droneId.value()));
         drone.clearEvents();
         return drone;
     }

@@ -3,6 +3,8 @@ package sap.shipping.delivery.application;
 import sap.shipping.common.exagonal.InBoundPort;
 import sap.shipping.delivery.domain.*;
 import sap.shipping.delivery.domain.events.DeliveryCompleted;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,11 +17,16 @@ public class DeliveryService {
     private final DeliveryRepository repository;
     private final DroneServicePort droneService;
     private final OrderServicePort orderService;
+    private final List<DeliveryServiceObserver> observers = new ArrayList<>();
 
     public DeliveryService(DeliveryRepository repository, DroneServicePort droneService, OrderServicePort orderService) {
         this.repository = repository;
         this.droneService = droneService;
         this.orderService = orderService;
+    }
+
+    public void addObserver(DeliveryServiceObserver observer) {
+        observers.add(observer);
     }
 
     public Delivery scheduleDelivery(String orderId, double pickupLat, double pickupLng,
@@ -28,6 +35,7 @@ public class DeliveryService {
         var delivery = new Delivery(DeliveryId.generate(), orderId, route, weightKg);
         repository.save(delivery);
         logger.log(Level.INFO, "schedule delivery " + delivery.getId().value() + " for order " + orderId);
+        observers.forEach(o -> o.notifyDeliveryScheduled(delivery.getId().value()));
 
         var droneId = droneService.requestAvailableDrone(pickupLat, pickupLng, weightKg);
         if (droneId.isPresent()) {
@@ -68,6 +76,7 @@ public class DeliveryService {
         delivery.complete();
         repository.save(delivery);
         logger.log(Level.INFO, "complete delivery " + deliveryId.value());
+        observers.forEach(o -> o.notifyDeliveryCompleted(deliveryId.value()));
 
         delivery.pendingEvents().stream()
             .filter(e -> e instanceof DeliveryCompleted)

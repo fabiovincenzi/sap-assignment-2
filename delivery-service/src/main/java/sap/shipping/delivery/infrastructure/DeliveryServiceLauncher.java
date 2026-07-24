@@ -13,6 +13,7 @@ public class DeliveryServiceLauncher extends AbstractVerticle {
     static Logger logger = Logger.getLogger("[Delivery Service]");
 
     private static final int PORT = 8091;
+    private static final int METRICS_PORT = 9491;
 
     /* Externalized configuration: defaults target a manual local deployment,
        the docker-compose file overrides them with the service container names. */
@@ -35,6 +36,13 @@ public class DeliveryServiceLauncher extends AbstractVerticle {
 
         var service = new DeliveryService(repo, droneProxy, orderProxy);
         var controller = new DeliveryController(service);
+
+        try {
+            service.addObserver(new PrometheusDeliveryServiceObserver(METRICS_PORT));
+            logger.log(Level.INFO, "Prometheus metrics server ready - port: " + METRICS_PORT);
+        } catch (ObsMetricServerException e) {
+            logger.log(Level.SEVERE, "Failed to start Prometheus metrics server - " + e.getMessage());
+        }
 
         vertx.createHttpServer()
             .requestHandler(controller.createRouter(vertx))

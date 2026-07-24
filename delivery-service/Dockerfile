@@ -13,4 +13,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 WORKDIR /app
 COPY --from=build /project/delivery-service/build/install/delivery-service /app
 EXPOSE 8091
+EXPOSE 9491
 CMD ["/app/bin/delivery-service"]

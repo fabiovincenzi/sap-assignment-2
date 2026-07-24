@@ -68,7 +68,7 @@ Gli endpoint di **coreografia interna** (scheduleDelivery, drone-position, assig
 - Tempi più corti (`interval 15s`, `start_period 20s` vs `1m30s`/`40s` del lab) per rendere lo stato `(healthy)` visibile in fretta durante la demo.
 - **`restart: unless-stopped`** (restart policy nativa di Docker) invece del container `autoheal` del lab: il README del Lab 8 stesso ammette che autoheal *"is not working properly"*; la restart policy nativa è più semplice e affidabile. Autoheal citabile come alternativa.
 
-### 1.3 Observability — Application Metrics 🟡
+### 1.3 Observability — Application Metrics ✅
 
 **Cos'è (D40 / lab notes, slide 43-47):** contatori e gauge esposti a un server di metriche. Modello **pull**: Prometheus interroga un endpoint `/metrics`; (Grafana visualizza — non containerizzato, vedi sotto).
 
@@ -78,7 +78,9 @@ Gli endpoint di **coreografia interna** (scheduleDelivery, drone-position, assig
 - **Delivery Service** ✅ (inc validato in locale: gauge 0→2 dopo due schedule): gauge `deliveries_in_progress`, `inc()` in `scheduleDelivery`, `dec()` in `completeDelivery`. Observer con **due metodi** (`notifyDeliveryScheduled`/`notifyDeliveryCompleted`) perché un gauge ha due transizioni, a differenza del counter monotòno di order. Nota: il `dec` non è stato esercitato end-to-end perché senza drone-service la consegna resta `SCHEDULED` e non può passare a `IN_TRANSIT`/`DELIVERED` (vincolo del ciclo di vita, non delle metriche).
 - **Caveat gauge da citare:** una consegna che **fallisce** (`DeliveryFailed`) oggi non decrementa il gauge (gestiamo solo lo schedule→complete); con più tempo si aggancerebbe anche l'evento di fallimento per evitare che il gauge sovrastimi le consegne attive.
 - **Drone Service** ✅ (ciclo gauge validato end-to-end: 0→2 register, →1 assign, →2 release): gauge `drones_available`, observer a due metodi `notifyDroneAvailable` (in `registerDrone` e `releaseDrone` → `inc()`) e `notifyDroneAssigned` (in `assignDrone` → `dec()`). È l'unico servizio dove anche il `dec` è stato esercitato dal vivo, perché register/assign/release non dipendono da altri servizi.
-- Ancora da instrumentare: gateway (`gateway_requests_total` counter).
+- **API Gateway** ✅ (validato: counter 1→5 dopo le richieste): counter `gateway_requests_total`, incrementato da un **handler di routing** (`router.route().handler(...)` come primo nella catena, prima del `BodyHandler`).
+
+**Integrazione nel gateway — differenza consapevole (punto forte per il report):** a differenza dei 3 servizi, il gateway è **sottile e senza core di dominio** (solo routing + aggregazione, nessun `@InBoundPort` con logica). Non ci sono fatti di dominio da osservare, quindi **niente observer port**: la metrica conta le richieste HTTP, che è una preoccupazione puramente infrastrutturale, e vive interamente in infrastructure (`GatewayMetrics` `@Adapter` + un handler sulla pipeline Vert.x). Lezione: i pattern si applicano dove **hanno senso** — forzare un observer/evento di dominio su un componente che non ha dominio sarebbe artificiale. Per order/delivery/drone la metrica riflette fatti di dominio (observer che tiene pulito il core); per il gateway è un contatore sul traffico HTTP.
 
 **Counter vs Gauge (differenza di design osservata implementando):** il counter di order ha **un solo** metodo observer (`notifyOrderCreated` → `inc()`), è monotòno. Il gauge di delivery ne ha **due** (`inc` allo schedule, `dec` al complete) perché rappresenta una quantità istantanea che sale e scende. Stesso schema esagonale (port `@OutBoundPort` + adapter `@Adapter`), semantica della metrica diversa.
 
@@ -90,6 +92,49 @@ Gli endpoint di **coreografia interna** (scheduleDelivery, drone-position, assig
 - Rispetto al **Lab 8**: là il `service.addObserver(obs)` c'era già; qui il meccanismo observer è stato **aggiunto** (le classi evento di dominio esistevano, ma non un port di pubblicazione). Questo stesso port è la base per l'**Event Sourcing** (1.4) → lavoro non sprecato.
 
 **Gotcha da citare nel report (naming Prometheus):** la metrica **non** può chiamarsi `orders_created_total`: il client rimuove il suffisso convenzionale `_total` dei counter, resta `orders_created`, e `_created` è un **suffisso riservato** (Prometheus genera in automatico la serie `<name>_created` col timestamp di creazione del counter) → `IllegalArgumentException`. Rinominata in `orders_placed_total`. Regola generale: per un counter dare il nome-base (con o senza `_total`), evitando i suffissi riservati `_created`, `_total`, `_sum`, `_count`, `_bucket`, `_gsum`, `_gcount`.
+
+**Le 4 metriche applicative (riepilogo):**
+
+| Servizio | Metrica | Tipo | Porta metriche | Quando cambia |
+|---|---|---|---|---|
+| order | `orders_placed_total` | counter | 9490 | `inc` alla creazione ordine |
+| delivery | `deliveries_in_progress` | gauge | 9491 | `inc` allo schedule, `dec` al complete |
+| drone | `drones_available` | gauge | 9493 | `inc` a register/release, `dec` all'assign |
+| gateway | `gateway_requests_total` | counter | 9492 | `inc` a ogni richiesta HTTP |
+
+Oltre a queste, ogni servizio espone gratis le **metriche JVM** (`jvm_*`, via `JvmMetrics.builder().register()`): memoria, GC, thread, ecc.
+
+**Come accedere (modello pull):** `docker compose up --build -d`, poi UI Prometheus su **http://localhost:9090**. `Status → Targets` mostra lo stato dello scraping (i 4 target UP); tab `Graph` per lanciare le query. Le porte metriche sono pubblicate anche sull'host, quindi `curl http://localhost:9490/metrics` (ecc.) mostra il testo grezzo senza passare da Prometheus.
+
+**Query PromQL da usare (demo + base per i QAS del punto 5):**
+
+```promql
+# --- valori diretti ---
+orders_placed_total                      # totale ordini creati (counter, sale sempre)
+deliveries_in_progress                   # consegne attive adesso (gauge)
+drones_available                         # droni liberi adesso (gauge)
+gateway_requests_total                   # totale richieste al gateway (counter)
+
+# --- rate: la "derivata" di un counter (eventi al secondo) ---
+rate(orders_placed_total[1m])            # ordini/secondo nell'ultimo minuto
+rate(gateway_requests_total[5m])         # throughput del gateway (req/s su 5 min)
+sum(rate(gateway_requests_total[5m]))    # stesso valore aggregato (utile con più repliche)
+
+# --- availability / saturazione (per i QAS) ---
+drones_available == 0                    # istanti senza droni liberi (rischio di rifiuto consegne)
+min_over_time(drones_available[10m])     # minimo di droni liberi negli ultimi 10 min
+max_over_time(deliveries_in_progress[10m])  # picco di consegne concorrenti
+
+# --- salute dei target (Health via metriche di scraping) ---
+up                                       # 1 = target su, 0 = giù (per ogni job)
+up == 0                                  # elenca i servizi che Prometheus non riesce a scrapare
+
+# --- JVM (esempi) ---
+jvm_memory_used_bytes                    # memoria usata per area
+rate(jvm_gc_collection_seconds_sum[5m])  # tempo speso in GC al secondo
+```
+
+> Nota per il report: `rate()` va **sempre** usato sui counter (mai leggere il valore assoluto, che si azzera al restart); sui gauge invece si legge il valore o si usano `*_over_time`. La metrica `up` è generata da Prometheus stesso ed è il ponte naturale tra Application Metrics e Health Check per i QAS di availability.
 
 ### 1.4 Event Sourcing ⬜ (applicato a UN servizio)
 

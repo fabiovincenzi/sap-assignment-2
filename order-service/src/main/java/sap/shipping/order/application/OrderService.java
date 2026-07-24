@@ -3,6 +3,8 @@ package sap.shipping.order.application;
 import sap.shipping.common.exagonal.InBoundPort;
 import sap.shipping.order.domain.*;
 import sap.shipping.order.domain.events.OrderConfirmed;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,16 +16,22 @@ public class OrderService {
 
     private final OrderRepository repository;
     private final DeliveryServicePort deliveryService;
+    private final List<OrderServiceObserver> observers = new ArrayList<>();
 
     public OrderService(OrderRepository repository, DeliveryServicePort deliveryService) {
         this.repository = repository;
         this.deliveryService = deliveryService;
     }
 
+    public void addObserver(OrderServiceObserver observer) {
+        observers.add(observer);
+    }
+
     public Order createOrder(String customerId, Address pickup, Address delivery, PackageInfo packageInfo) {
         var order = new Order(OrderId.generate(), customerId, pickup, delivery, packageInfo);
         repository.save(order);
         logger.log(Level.INFO, "create new order " + order.getId().value() + " for customer " + customerId);
+        observers.forEach(o -> o.notifyOrderCreated(order.getId().value()));
         return order;
     }
 

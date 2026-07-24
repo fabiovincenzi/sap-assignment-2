@@ -13,4 +13,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
 WORKDIR /app
 COPY --from=build /project/order-service/build/install/order-service /app
 EXPOSE 8090
+EXPOSE 9490
 CMD ["/app/bin/order-service"]

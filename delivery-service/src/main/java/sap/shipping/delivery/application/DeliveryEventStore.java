@@ -32,4 +32,10 @@ public interface DeliveryEventStore {
 
     /** Number of events stored for a delivery, i.e. its current version. */
     long currentVersion(DeliveryId id);
+
+    /**
+     * Ids of every delivery with a stream. Commands never need it - it is there to rebuild
+     * read models, the way real event stores expose a global stream next to the per-key one.
+     */
+    List<DeliveryId> streamIds();
 }

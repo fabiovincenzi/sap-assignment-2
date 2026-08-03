@@ -11,7 +11,7 @@ public class DeliveryServiceTest {
     public void completionStillNotifiesOrderAndReleasesDrone() {
         List<String> notified = new ArrayList<>();
         List<String> released = new ArrayList<>();
-        var repo = new EventSourcedDeliveryRepository(new InMemoryDeliveryEventStore(), new InMemoryDeliverySnapshotStore());
+        var repo = new EventSourcedDeliveryRepository(new InMemoryDeliveryEventStore(), new InMemoryDeliverySnapshotStore(), new InMemoryDeliveryLookupView());
         DroneServicePort drone = new DroneServicePort() {
             public Optional<String> requestAvailableDrone(double a, double b, double c) { return Optional.of("drone-1"); }
             public void releaseDrone(String id) { released.add(id); }

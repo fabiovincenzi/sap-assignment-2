@@ -10,6 +10,7 @@ import sap.shipping.delivery.domain.DeliveryStatus;
 import sap.shipping.delivery.domain.Route;
 import sap.shipping.delivery.infrastructure.EventSourcedDeliveryRepository;
 import sap.shipping.delivery.infrastructure.InMemoryDeliveryEventStore;
+import sap.shipping.delivery.infrastructure.InMemoryDeliveryLookupView;
 import sap.shipping.delivery.infrastructure.InMemoryDeliverySnapshotStore;
 
 import static org.assertj.core.api.Assertions.*;
@@ -28,7 +29,8 @@ public class DeliverySnapshotTest {
     public void setUp() {
         eventStore = new InMemoryDeliveryEventStore();
         snapshotStore = new InMemoryDeliverySnapshotStore();
-        repository = new EventSourcedDeliveryRepository(eventStore, snapshotStore, SNAPSHOT_EVERY);
+        repository = new EventSourcedDeliveryRepository(eventStore, snapshotStore,
+            new InMemoryDeliveryLookupView(), SNAPSHOT_EVERY);
         deliveryId = DeliveryId.generate();
     }
 
@@ -78,8 +80,8 @@ public class DeliverySnapshotTest {
         var withSnapshot = repository.findById(deliveryId).orElseThrow();
 
         // same events, no snapshots at all
-        var withoutSnapshot = new EventSourcedDeliveryRepository(
-                eventStore, new InMemoryDeliverySnapshotStore(), SNAPSHOT_EVERY)
+        var withoutSnapshot = new EventSourcedDeliveryRepository(eventStore,
+                new InMemoryDeliverySnapshotStore(), new InMemoryDeliveryLookupView(), SNAPSHOT_EVERY)
             .findById(deliveryId).orElseThrow();
 
         assertThat(withoutSnapshot.version()).isEqualTo(withSnapshot.version());

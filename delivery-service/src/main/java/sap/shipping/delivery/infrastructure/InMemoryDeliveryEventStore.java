@@ -61,6 +61,11 @@ public class InMemoryDeliveryEventStore implements DeliveryEventStore {
     }
 
     @Override
+    public List<DeliveryId> streamIds() {
+        return List.copyOf(streams.keySet());
+    }
+
+    @Override
     public long currentVersion(DeliveryId id) {
         return streams.getOrDefault(id, List.of()).size();
     }

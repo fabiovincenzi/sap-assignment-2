@@ -1,36 +1,162 @@
 package sap.shipping.delivery.domain;
 
 import sap.shipping.common.ddd.Aggregate;
+import sap.shipping.common.ddd.DomainEvent;
 import sap.shipping.delivery.domain.events.DeliveryCompleted;
 import sap.shipping.delivery.domain.events.DeliveryFailed;
+import sap.shipping.delivery.domain.events.DeliveryScheduled;
+import sap.shipping.delivery.domain.events.DronePositionUpdated;
+import sap.shipping.delivery.domain.events.DroneAssigned;
+import sap.shipping.delivery.domain.events.TransitStarted;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * Delivery aggregate, structured for event sourcing: process* validates and returns events
+ * without changing the state, apply updates the state and never fails.
+ * State is rebuilt by replaying events, so apply must stay deterministic.
+ */
 public class Delivery implements Aggregate<DeliveryId> {
 
-    private final DeliveryId id;
-    private final String orderId;
-    private final Route route;
-    private final double weightKg;
-    private final Instant createdAt;
+    private DeliveryId id;
+    private String orderId;
+    private Route route;
+    private double weightKg;
+    private Instant createdAt;
     private DeliveryStatus status;
     private String droneId;
     private double currentLat;
     private double currentLng;
-    private final List<Object> pendingEvents = new ArrayList<>();
+    private final List<DomainEvent> pendingEvents = new ArrayList<>();
+
+    /** Empty aggregate, used to rebuild the state by replaying events. */
+    public Delivery() {
+    }
 
     public Delivery(DeliveryId id, String orderId, Route route, double weightKg) {
-        this.id = id;
-        this.orderId = orderId;
-        this.route = route;
-        this.weightKg = weightKg;
-        this.createdAt = Instant.now();
-        this.status = DeliveryStatus.SCHEDULED;
-        this.currentLat = route.pickupLat();
-        this.currentLng = route.pickupLng();
+        this();
+        emit(processSchedule(id, orderId, route, weightKg, Instant.now()));
     }
+
+    // --- process: validate, produce events, do not mutate ---
+
+    public List<DomainEvent> processSchedule(DeliveryId id, String orderId, Route route,
+                                             double weightKg, Instant createdAt) {
+        return List.of(new DeliveryScheduled(id, orderId, route, weightKg, createdAt));
+    }
+
+    public List<DomainEvent> processAssignDrone(String droneId) {
+        if (status != DeliveryStatus.SCHEDULED) {
+            throw new IllegalStateException("Can only assign drone to a SCHEDULED delivery");
+        }
+        return List.of(new DroneAssigned(id, droneId));
+    }
+
+    public List<DomainEvent> processStartTransit() {
+        if (status != DeliveryStatus.DRONE_ASSIGNED) {
+            throw new IllegalStateException("Can only start transit from DRONE_ASSIGNED status");
+        }
+        return List.of(new TransitStarted(id));
+    }
+
+    public List<DomainEvent> processUpdatePosition(double lat, double lng) {
+        return List.of(new DronePositionUpdated(id, lat, lng));
+    }
+
+    public List<DomainEvent> processComplete() {
+        if (status != DeliveryStatus.IN_TRANSIT) {
+            throw new IllegalStateException("Can only complete an IN_TRANSIT delivery");
+        }
+        return List.of(new DeliveryCompleted(id, orderId, droneId));
+    }
+
+    public List<DomainEvent> processFail(String reason) {
+        return List.of(new DeliveryFailed(id, orderId, reason));
+    }
+
+    // --- apply: mutate, never fail ---
+
+    public void apply(DomainEvent event) {
+        if (event instanceof DeliveryScheduled e) {
+            apply(e);
+        } else if (event instanceof DroneAssigned e) {
+            apply(e);
+        } else if (event instanceof TransitStarted e) {
+            apply(e);
+        } else if (event instanceof DronePositionUpdated e) {
+            apply(e);
+        } else if (event instanceof DeliveryCompleted e) {
+            apply(e);
+        } else if (event instanceof DeliveryFailed e) {
+            apply(e);
+        } else {
+            throw new IllegalArgumentException("Unknown event type: " + event.getClass().getName());
+        }
+    }
+
+    public void apply(DeliveryScheduled e) {
+        this.id = e.deliveryId();
+        this.orderId = e.orderId();
+        this.route = e.route();
+        this.weightKg = e.weightKg();
+        this.createdAt = e.createdAt();
+        this.status = DeliveryStatus.SCHEDULED;
+        this.currentLat = e.route().pickupLat();
+        this.currentLng = e.route().pickupLng();
+    }
+
+    public void apply(DroneAssigned e) {
+        this.droneId = e.droneId();
+        this.status = DeliveryStatus.DRONE_ASSIGNED;
+    }
+
+    public void apply(TransitStarted e) {
+        this.status = DeliveryStatus.IN_TRANSIT;
+    }
+
+    public void apply(DronePositionUpdated e) {
+        this.currentLat = e.lat();
+        this.currentLng = e.lng();
+    }
+
+    public void apply(DeliveryCompleted e) {
+        this.status = DeliveryStatus.DELIVERED;
+    }
+
+    public void apply(DeliveryFailed e) {
+        this.status = DeliveryStatus.FAILED;
+    }
+
+    // --- commands: process, apply, keep the events for persistence ---
+
+    public void assignDrone(String droneId) {
+        emit(processAssignDrone(droneId));
+    }
+
+    public void startTransit() {
+        emit(processStartTransit());
+    }
+
+    public void updatePosition(double lat, double lng) {
+        emit(processUpdatePosition(lat, lng));
+    }
+
+    public void complete() {
+        emit(processComplete());
+    }
+
+    public void fail(String reason) {
+        emit(processFail(reason));
+    }
+
+    private void emit(List<DomainEvent> events) {
+        events.forEach(this::apply);
+        pendingEvents.addAll(events);
+    }
+
+    // --- state ---
 
     @Override
     public DeliveryId getId() { return id; }
@@ -48,40 +174,7 @@ public class Delivery implements Aggregate<DeliveryId> {
         return route.estimatedMinutes();
     }
 
-    public void assignDrone(String droneId) {
-        if (status != DeliveryStatus.SCHEDULED) {
-            throw new IllegalStateException("Can only assign drone to a SCHEDULED delivery");
-        }
-        this.droneId = droneId;
-        this.status = DeliveryStatus.DRONE_ASSIGNED;
-    }
-
-    public void startTransit() {
-        if (status != DeliveryStatus.DRONE_ASSIGNED) {
-            throw new IllegalStateException("Can only start transit from DRONE_ASSIGNED status");
-        }
-        this.status = DeliveryStatus.IN_TRANSIT;
-    }
-
-    public void updatePosition(double lat, double lng) {
-        this.currentLat = lat;
-        this.currentLng = lng;
-    }
-
-    public void complete() {
-        if (status != DeliveryStatus.IN_TRANSIT) {
-            throw new IllegalStateException("Can only complete an IN_TRANSIT delivery");
-        }
-        this.status = DeliveryStatus.DELIVERED;
-        pendingEvents.add(new DeliveryCompleted(id, orderId, droneId));
-    }
-
-    public void fail(String reason) {
-        this.status = DeliveryStatus.FAILED;
-        pendingEvents.add(new DeliveryFailed(id, orderId, reason));
-    }
-
-    public List<Object> pendingEvents() {
+    public List<DomainEvent> pendingEvents() {
         return Collections.unmodifiableList(pendingEvents);
     }
 

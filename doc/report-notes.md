@@ -169,10 +169,25 @@ rate(jvm_gc_collection_seconds_sum[5m])  # tempo speso in GC al secondo
 
 Guadagno **3,6×**. Da dire nel report: il rapporto è contenuto perché store e snapshot sono in memoria e gli eventi sono piccoli, quindi si misura solo il costo del `fold`; con un event store su database il divario crescerebbe molto, perché senza snapshot si leggono 1003 righe invece di 1 snapshot + 3 righe. Il punto architetturale è che il costo del caricamento passa da **O(numero di eventi)** a **O(eventi dopo l'ultimo snapshot)**, cioè da crescente a costante.
 
-### 1.5 Due pattern a scelta ⬜
+### 1.5 Due pattern a scelta — CQRS ✅ / secondo ⬜
 
-Scelta:
-- **CQRS** (D37) — **non è una scelta di comodo ma una necessità tecnica**: `DeliveryRepository` espone `findByOrderId` e `findByDroneId`, cioè query su campi non-chiave, che un event store non può servire (le Lab Notes: *"a NoSQL-based event store will typically only support primary key-based lookup"* → *"To solve the problem: CQRS pattern"*). Si implementa come proiezione che mantiene gli indici `orderId → deliveryId` e `droneId → deliveryId` aggiornati dagli eventi. È l'argomento più forte da portare nel report: i due pattern non sono giustapposti, uno impone l'altro.
+**CQRS ✅** — **non è una scelta di comodo ma una necessità tecnica**: `DeliveryRepository` espone `findByOrderId` e `findByDroneId`, cioè query su campi non-chiave, che un event store non può servire (le Lab Notes: *"a NoSQL-based event store will typically only support primary key-based lookup"* → *"To solve the problem: CQRS pattern"*). È l'argomento più forte da portare nel report: i due pattern non sono giustapposti, **uno impone l'altro**.
+
+Implementazione — i due lati sono separati anche strutturalmente, non solo concettualmente:
+
+| Componente | Strato | Ruolo |
+|---|---|---|
+| `DeliveryEventStore` + adapter | application / infrastructure | **write side**: append-only, fonte di verità |
+| `DeliveryLookupView` (`@OutBoundPort`) + `InMemoryDeliveryLookupView` | application / infrastructure | **read side**: indici `orderId → deliveryId`, `droneId → deliveryId` |
+| `DeliveryProjector` | application | traduce gli eventi in aggiornamenti della vista — **l'unico** che scrive sul read model |
+
+`EventSourcedDeliveryRepository` scrive attraverso il projector e legge attraverso la vista: comandi e query non toccano mai lo stesso modello.
+
+Il metodo `rebuildLookupView()` cancella la vista e la ricostruisce rileggendo tutti gli eventi (`DeliveryEventStore.streamIds()`, l'equivalente dello stream globale degli event store reali, che serve alle proiezioni e mai ai comandi). Dimostra la proprietà che rende sicuro un read model: **è dato derivato**, cancellabile e rigenerabile — la stessa proprietà degli snapshot. Coperto da `DeliveryProjectionTest.theViewCanBeDroppedAndRebuiltFromTheEvents`.
+
+**Secondo pattern ⬜** — due opzioni:
+- **Circuit Breaker** sui proxy sincroni: richiede codice, ma **regala anche un QAS** (availability: se il drone-service è giù, il delivery risponde subito) e la metrica dello stato del circuito lega observability e QAS come chiede la consegna.
+- **Service Discovery** dichiarato a livello di deployment (DNS interno di Docker Compose, già in uso): costo zero di codice, ma non aiuta sui QAS.
 - **Circuit Breaker** (*Design for failure*, module-3.1 p. 9 categoria *Reliability*): sui proxy sincroni, con `vertx-circuit-breaker`. Evita fallimenti a cascata (fail fast + fallback). Si aggancia al gateway e al QAS di availability.
 
 *(Alternativa di ripiego se il tempo stringe: Externalized Configuration — già implementato, sez. 3.1 — è un pattern Richardson a tutti gli effetti, e il DNS interno di Docker Compose è Service Discovery server-side.)*

@@ -30,7 +30,7 @@ public class DeliveryServiceLauncher extends AbstractVerticle {
     @Override
     public void start() {
         logger.log(Level.INFO, "Delivery Service initializing...");
-        var repo = new InMemoryDeliveryRepository();
+        var repo = new EventSourcedDeliveryRepository(new InMemoryDeliveryEventStore());
         var droneProxy = new DroneServiceProxy(DRONE_HOST, DRONE_PORT);
         var orderProxy = new OrderServiceProxy(ORDER_HOST, ORDER_PORT);
 

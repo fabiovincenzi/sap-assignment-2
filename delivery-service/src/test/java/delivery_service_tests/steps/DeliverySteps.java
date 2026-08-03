@@ -5,7 +5,8 @@ import sap.shipping.delivery.application.DeliveryService;
 import sap.shipping.delivery.application.DroneServicePort;
 import sap.shipping.delivery.application.OrderServicePort;
 import sap.shipping.delivery.domain.Delivery;
-import sap.shipping.delivery.infrastructure.InMemoryDeliveryRepository;
+import sap.shipping.delivery.infrastructure.EventSourcedDeliveryRepository;
+import sap.shipping.delivery.infrastructure.InMemoryDeliveryEventStore;
 
 import java.util.Optional;
 
@@ -17,7 +18,7 @@ public class DeliverySteps {
     private Delivery currentDelivery;
 
     public DeliverySteps() {
-        var repo = new InMemoryDeliveryRepository();
+        var repo = new EventSourcedDeliveryRepository(new InMemoryDeliveryEventStore());
         DroneServicePort dronePort = new DroneServicePort() {
             @Override
             public Optional<String> requestAvailableDrone(double lat, double lng, double weightKg) {

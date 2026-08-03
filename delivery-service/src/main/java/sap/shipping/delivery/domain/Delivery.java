@@ -29,6 +29,7 @@ public class Delivery implements Aggregate<DeliveryId> {
     private String droneId;
     private double currentLat;
     private double currentLng;
+    private long version;
     private final List<DomainEvent> pendingEvents = new ArrayList<>();
 
     /** Empty aggregate, used to rebuild the state by replaying events. */
@@ -94,6 +95,7 @@ public class Delivery implements Aggregate<DeliveryId> {
         } else {
             throw new IllegalArgumentException("Unknown event type: " + event.getClass().getName());
         }
+        version++;
     }
 
     public void apply(DeliveryScheduled e) {
@@ -173,6 +175,12 @@ public class Delivery implements Aggregate<DeliveryId> {
     public long estimatedMinutes() {
         return route.estimatedMinutes();
     }
+
+    /** Number of events applied so far, pending ones included. */
+    public long version() { return version; }
+
+    /** Version the aggregate was loaded at, i.e. the one the event store is expected to be at. */
+    public long persistedVersion() { return version - pendingEvents.size(); }
 
     public List<DomainEvent> pendingEvents() {
         return Collections.unmodifiableList(pendingEvents);

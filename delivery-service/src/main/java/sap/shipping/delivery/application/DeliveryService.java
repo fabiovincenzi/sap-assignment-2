@@ -74,11 +74,13 @@ public class DeliveryService {
         var delivery = repository.findById(deliveryId)
             .orElseThrow(() -> new IllegalArgumentException("Delivery not found: " + deliveryId));
         delivery.complete();
+        /* read the events before saving: the repository hands them to the event store and clears them */
+        var events = List.copyOf(delivery.pendingEvents());
         repository.save(delivery);
         logger.log(Level.INFO, "complete delivery " + deliveryId.value());
         observers.forEach(o -> o.notifyDeliveryCompleted(deliveryId.value()));
 
-        delivery.pendingEvents().stream()
+        events.stream()
             .filter(e -> e instanceof DeliveryCompleted)
             .map(e -> (DeliveryCompleted) e)
             .forEach(e -> {
@@ -87,7 +89,6 @@ public class DeliveryService {
                 orderService.notifyDeliveryCompleted(e.orderId());
                 droneService.releaseDrone(e.droneId());
             });
-        delivery.clearEvents();
 
         return delivery;
     }

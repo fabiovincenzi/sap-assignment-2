@@ -27,6 +27,9 @@ public interface DeliveryEventStore {
     /** Events of a delivery, in the order they happened. Empty if unknown. */
     List<DomainEvent> load(DeliveryId id);
 
+    /** Events recorded after the given version, used to replay on top of a snapshot. */
+    List<DomainEvent> loadFrom(DeliveryId id, long fromVersion);
+
     /** Number of events stored for a delivery, i.e. its current version. */
     long currentVersion(DeliveryId id);
 }

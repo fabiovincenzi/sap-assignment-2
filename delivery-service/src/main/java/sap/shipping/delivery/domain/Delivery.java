@@ -36,6 +36,22 @@ public class Delivery implements Aggregate<DeliveryId> {
     public Delivery() {
     }
 
+    /** Rebuilds an aggregate from a snapshot: only the events after it still have to be applied. */
+    public static Delivery fromSnapshot(DeliverySnapshot s) {
+        var delivery = new Delivery();
+        delivery.id = s.deliveryId();
+        delivery.orderId = s.orderId();
+        delivery.route = s.route();
+        delivery.weightKg = s.weightKg();
+        delivery.createdAt = s.createdAt();
+        delivery.status = s.status();
+        delivery.droneId = s.droneId();
+        delivery.currentLat = s.currentLat();
+        delivery.currentLng = s.currentLng();
+        delivery.version = s.version();
+        return delivery;
+    }
+
     public Delivery(DeliveryId id, String orderId, Route route, double weightKg) {
         this();
         emit(processSchedule(id, orderId, route, weightKg, Instant.now()));
@@ -174,6 +190,12 @@ public class Delivery implements Aggregate<DeliveryId> {
 
     public long estimatedMinutes() {
         return route.estimatedMinutes();
+    }
+
+    /** Takes a picture of the current state, to be replayed from instead of the whole stream. */
+    public DeliverySnapshot snapshot() {
+        return new DeliverySnapshot(id, orderId, route, weightKg, createdAt,
+            status, droneId, currentLat, currentLng, version);
     }
 
     /** Number of events applied so far, pending ones included. */

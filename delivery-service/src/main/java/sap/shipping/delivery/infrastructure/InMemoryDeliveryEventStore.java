@@ -53,6 +53,14 @@ public class InMemoryDeliveryEventStore implements DeliveryEventStore {
     }
 
     @Override
+    public List<DomainEvent> loadFrom(DeliveryId id, long fromVersion) {
+        return streams.getOrDefault(id, List.of()).stream()
+            .filter(stored -> stored.version() > fromVersion)
+            .map(StoredEvent::event)
+            .toList();
+    }
+
+    @Override
     public long currentVersion(DeliveryId id) {
         return streams.getOrDefault(id, List.of()).size();
     }

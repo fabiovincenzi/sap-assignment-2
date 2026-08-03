@@ -160,6 +160,15 @@ rate(jvm_gc_collection_seconds_sum[5m])  # tempo speso in GC al secondo
 
 **Criterio di correttezza:** dopo la fase 4 i test Cucumber esistenti devono passare senza modifiche.
 
+**Misura degli snapshot** (fase 5, misurata in locale su stream da 1003 eventi, snapshot ogni 50, media su 2000 caricamenti dopo warm-up):
+
+| | tempo per `findById` |
+|---|---|
+| senza snapshot (replay di 1003 eventi) | 0,013 ms |
+| con snapshot (replay dei soli 3 eventi successivi) | 0,004 ms |
+
+Guadagno **3,6×**. Da dire nel report: il rapporto è contenuto perché store e snapshot sono in memoria e gli eventi sono piccoli, quindi si misura solo il costo del `fold`; con un event store su database il divario crescerebbe molto, perché senza snapshot si leggono 1003 righe invece di 1 snapshot + 3 righe. Il punto architetturale è che il costo del caricamento passa da **O(numero di eventi)** a **O(eventi dopo l'ultimo snapshot)**, cioè da crescente a costante.
+
 ### 1.5 Due pattern a scelta ⬜
 
 Scelta:

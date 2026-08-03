@@ -138,15 +138,35 @@ rate(jvm_gc_collection_seconds_sum[5m])  # tempo speso in GC al secondo
 
 ### 1.4 Event Sourcing ⬜ (applicato a UN servizio)
 
-**Cos'è (D38 / modulo 3.1):** modellare la persistenza come sequenza di eventi invece che come stato corrente; lo stato si ricostruisce riapplicando gli eventi.
+**Cos'è (D38 / modulo 2.1 p. 48 / modulo 3.1 p. 10):** modellare la persistenza come sequenza di eventi invece che come stato corrente; lo stato si ricostruisce riapplicando gli eventi.
 
-**Candidato: Delivery Service** — ha già gli eventi di dominio (`DeliveryCompleted`, `DeliveryFailed`) e un ciclo di vita a stati chiaro (SCHEDULED → DRONE_ASSIGNED → IN_TRANSIT → DELIVERED/FAILED).
+**Servizio scelto: Delivery Service** — ha già gli eventi di dominio (`DeliveryCompleted`, `DeliveryFailed`), il campo `pendingEvents` nell'aggregate e un ciclo di vita a stati chiaro (SCHEDULED → DRONE_ASSIGNED → IN_TRANSIT → DELIVERED/FAILED).
+
+**Fonte del procedimento:** `doc/event-sourcing-notes.md` — riassume la Lab Notes dedicata (Google Doc, non fra i PDF del corso) e ne deriva il piano per il nostro dominio. Vedi anche D38b in `Domande_Esame_SAP.md`.
+
+**Da dire nel report:** nessun lab del corso implementa l'event sourcing — il `lab-activity-10` lo lascia come *"[TODO] implementing event sourcing"* e mantiene una persistenza a stato corrente (`InMemoryGameRepository`). A differenza di gateway (Lab 7), metriche (Lab 8) e testing (Lab 9), qui non c'è codice di riferimento da adattare: l'implementazione è progettata da zero seguendo Richardson [MP] cap. 6.
+
+**Piano in 6 fasi** (dettaglio in `doc/event-sourcing-notes.md`):
+1. eventi completi, uno per transizione, con payload sufficiente al replay (`DeliveryScheduled` "grasso");
+2. refactor dell'aggregate in `processXxx()` (valida, non muta, può fallire) + `apply(evento)` (muta, non fallisce);
+3. `DeliveryEventStore` come `@OutBoundPort` + adapter in-memory append-only, con `expectedVersion` per il controllo di concorrenza ottimistico;
+4. `EventSourcedDeliveryRepository` che implementa l'interfaccia esistente — `DeliveryService` resta invariato grazie all'esagonale;
+5. snapshot ogni N eventi, motivati dallo stream ad alta frequenza di `updateDronePosition` (misurare il guadagno e usarlo nel QAS di performance);
+6. proiezione CQRS per `findByOrderId` / `findByDroneId`.
+
+**Decisione di design da motivare nel report:** event store **applicativo**, non Kafka. Le Lab Notes prevedono esplicitamente l'opzione *"we can implement our own event store"*; introdurre Kafka significherebbe aggiungere un broker al compose senza ottenere un event store vero (manca la lettura per aggregate e il controllo di concorrenza per stream).
+
+**Bonus dimostrativo:** `GET /api/deliveries/:id/history` e `?at=<timestamp>` → **temporal query**, il vantaggio sottolineato da module-2.1 p. 48.
+
+**Criterio di correttezza:** dopo la fase 4 i test Cucumber esistenti devono passare senza modifiche.
 
 ### 1.5 Due pattern a scelta ⬜
 
-Proposta:
-- **Circuit Breaker** (D / *Design for failure*): sui proxy sincroni, con `vertx-circuit-breaker`. Evita fallimenti a cascata (fail fast + fallback). Si aggancia bene al gateway e ai QAS di availability.
-- **CQRS** (D37) oppure **Log Aggregation** (D40). CQRS è naturale complemento dell'Event Sourcing sullo stesso servizio.
+Scelta:
+- **CQRS** (D37) — **non è una scelta di comodo ma una necessità tecnica**: `DeliveryRepository` espone `findByOrderId` e `findByDroneId`, cioè query su campi non-chiave, che un event store non può servire (le Lab Notes: *"a NoSQL-based event store will typically only support primary key-based lookup"* → *"To solve the problem: CQRS pattern"*). Si implementa come proiezione che mantiene gli indici `orderId → deliveryId` e `droneId → deliveryId` aggiornati dagli eventi. È l'argomento più forte da portare nel report: i due pattern non sono giustapposti, uno impone l'altro.
+- **Circuit Breaker** (*Design for failure*, module-3.1 p. 9 categoria *Reliability*): sui proxy sincroni, con `vertx-circuit-breaker`. Evita fallimenti a cascata (fail fast + fallback). Si aggancia al gateway e al QAS di availability.
+
+*(Alternativa di ripiego se il tempo stringe: Externalized Configuration — già implementato, sez. 3.1 — è un pattern Richardson a tutti gli effetti, e il DNS interno di Docker Compose è Service Discovery server-side.)*
 
 ---
 

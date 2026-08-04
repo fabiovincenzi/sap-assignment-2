@@ -5,3 +5,5 @@ include 'order-service'
 include 'delivery-service'
 include 'drone-service'
 include 'api-gateway'
+
+include 'system-end-to-end'

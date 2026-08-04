@@ -1,0 +1,14 @@
+dependencies {
+    testImplementation 'io.vertx:vertx-core:4.5.7'
+    testImplementation 'io.cucumber:cucumber-java:7.29.0'
+    testImplementation 'io.cucumber:cucumber-junit-platform-engine:7.29.0'
+    testImplementation 'org.junit.platform:junit-platform-suite:1.10.2'
+    testImplementation 'org.assertj:assertj-core:3.27.5'
+}
+
+/* The whole system must be up (docker compose up) before running these tests, so they stay
+   out of the normal build: run them with ./gradlew :system-end-to-end:test -Pe2e */
+test {
+    useJUnitPlatform()
+    onlyIf { project.hasProperty('e2e') }
+}

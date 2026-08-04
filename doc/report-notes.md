@@ -255,13 +255,60 @@ Base già presente da A1: ArchUnit (fitness functions) + Cucumber BDD.
 
 ---
 
-## 5. Quality Attribute Scenarios + Observability ⬜
+## 5. Quality Attribute Scenarios + Observability
 
-Consegna: discutere come usare gli observability pattern per implementare QAS, con **due esempi concreti**. Riferimento D8/D9. Base: `doc/analysis/quality-attributes.md` da A1.
+Consegna: discutere come gli observability pattern **implementano** i QAS, con due esempi concreti. Riferimento D8/D9. I QAS di partenza sono in `doc/analysis/quality-attributes.md` (A1).
 
-Idee (da raffinare):
-- **Availability**: *"se il delivery-service è irraggiungibile, l'order-service risponde entro 1s con un errore gestito invece di bloccarsi"* → misurabile con Application Metrics (error rate) + dimostrabile spegnendo un container. Si lega al Circuit Breaker.
-- **Performance/latency**: *"il 95% delle richieste di tracking risponde entro N ms"* → misurabile con Application Metrics (latency histogram sul gateway).
+Il punto da far passare nel report: un QAS senza strumentazione è **un'intenzione**, non un requisito. La `Response Measure` del formato a sei parti è misurabile solo se qualcosa la misura — e quel qualcosa sono gli observability pattern. È questo il legame che la consegna chiede di discutere.
+
+### QAS-A — Availability: guasto di un servizio a valle ✅ *verificato sul sistema in esecuzione*
+
+| Source | Stimulus | Environment | Artifact | Response | Response Measure |
+|---|---|---|---|---|---|
+| Guasto infrastrutturale | Il drone-service diventa irraggiungibile | Operazioni normali, sistema in container | Delivery Service + piattaforma | Il guasto è rilevato e il sistema continua ad accettare e programmare ordini, senza assegnare droni | Rilevamento < 15 s; nessun fallimento propagato al cliente |
+
+**Observability pattern che lo implementano:**
+- **Health Check API** — ogni servizio espone `/health`; il `healthcheck` del compose marca il container `unhealthy`.
+- **Application Metrics** — Prometheus produce da sé la metrica `up` per ogni target (`scrape_interval: 10s`), che vale 1 se lo scrape riesce e 0 altrimenti. È il ponte fra Health Check e Metrics.
+
+**Prova raccolta** (`docker compose stop drone-service`, attesa 25 s):
+
+```promql
+up
+  monitoring-drone-service    = 0      <- rilevato
+  monitoring-order-service    = 1
+  monitoring-delivery-service = 1
+  monitoring-api-gateway      = 1
+```
+
+Nel frattempo il sistema, interrogato dal gateway, ha continuato a funzionare in modo degradato:
+
+```
+ordine creato    -> PENDING
+confirm          -> HTTP 200
+tracking         -> {"orderStatus":"CONFIRMED","hasDelivery":true,
+                     "deliveryStatus":"SCHEDULED","droneId":null}
+```
+
+La consegna viene **programmata comunque**, semplicemente senza drone (`SCHEDULED` invece di `DRONE_ASSIGNED`): il guasto **non si propaga** al cliente. Con `docker compose start drone-service` la metrica torna a 1 entro 20 s.
+
+**Il cerchio si chiude con i test:** questo comportamento non è casuale, è specificato e verificato dall'integration test `DroneServiceProxyTest.anUnreachableServiceYieldsNoDrone`, che controlla che il proxy restituisca `Optional.empty()` invece di propagare l'eccezione. **Il test garantisce la proprietà, la metrica la osserva in esercizio.**
+
+**Miglioria naturale, se ci fosse tempo:** un Circuit Breaker eviterebbe di ritentare inutilmente verso un servizio noto come giù, e la sua metrica di stato renderebbe il QAS ancora più diretto.
+
+### QAS-B — Performance: latenza del tracking ⬜
+
+Corrisponde a **QAS-1** di A1 (*"posizione e ETA aggiornati, < 1 s di latenza"*).
+
+**Stato:** non ancora implementabile. Le metriche attuali sono quattro — `orders_placed_total`, `deliveries_in_progress`, `drones_available`, `gateway_requests_total` — cioè **contatori e gauge**: dicono *quante* richieste, non *quanto tempo* impiegano. Manca un **istogramma di latenza** sul gateway.
+
+**Cosa serve:** un `gateway_request_duration_seconds` (Histogram di `io.prometheus`) misurato attorno all'handler, e poi il percentile via PromQL:
+
+```promql
+histogram_quantile(0.95, rate(gateway_request_duration_seconds_bucket[1m]))
+```
+
+Da cui la `Response Measure` diventa verificabile: *il 95° percentile delle richieste di tracking resta sotto N ms*. È l'aggiunta più piccola che trasforma un QAS dichiarato in un QAS misurato.
 
 ---
 

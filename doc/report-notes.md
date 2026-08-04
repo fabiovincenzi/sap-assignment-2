@@ -185,9 +185,23 @@ Implementazione — i due lati sono separati anche strutturalmente, non solo con
 
 Il metodo `rebuildLookupView()` cancella la vista e la ricostruisce rileggendo tutti gli eventi (`DeliveryEventStore.streamIds()`, l'equivalente dello stream globale degli event store reali, che serve alle proiezioni e mai ai comandi). Dimostra la proprietà che rende sicuro un read model: **è dato derivato**, cancellabile e rigenerabile — la stessa proprietà degli snapshot. Coperto da `DeliveryProjectionTest.theViewCanBeDroppedAndRebuiltFromTheEvents`.
 
-**Secondo pattern ⬜** — due opzioni:
-- **Circuit Breaker** sui proxy sincroni: richiede codice, ma **regala anche un QAS** (availability: se il drone-service è giù, il delivery risponde subito) e la metrica dello stato del circuito lega observability e QAS come chiede la consegna.
-- **Service Discovery** dichiarato a livello di deployment (DNS interno di Docker Compose, già in uso): costo zero di codice, ma non aiuta sui QAS.
+**Service Discovery ✅** — implementato **a livello di deployment**, non applicativo.
+
+*Il problema* (module-3.1 p. 9, categoria *Discovery*): *"How does a client of a service determine the IP address of a service instance?"*. Con i container gli indirizzi sono dinamici — le istanze nascono, muoiono e si spostano — quindi non possono stare nel codice.
+
+*La soluzione adottata*: Docker Compose fornisce **built-in un Service Registry e un DNS resolver interno**, assegnando a ogni servizio un DNS name sulla rete `shipping_network`. È il modello **server-side discovery**: il client chiama sempre lo stesso nome logico e l'infrastruttura risolve verso un'istanza viva; il servizio chiamante non conosce né indirizzi né numero di repliche.
+
+*Dettaglio che conta*: nel `docker-compose.yml` le variabili puntano ai **nomi di servizio** (`DELIVERY_HOST=delivery-service`, `DRONE_HOST=drone-service`, `ORDER_HOST=order-service`) e **non** ai `container_name` (`delivery-01`, ...). È la differenza fra discovery vero e indirizzo fisso: il nome del servizio viene risolto dinamicamente e, con più repliche, distribuito fra tutte; il nome del container punterebbe sempre allo stesso.
+
+*Legame con Externalized Configuration* (sez. 3.1): gli stessi launcher usano il fallback `localhost` in esecuzione locale e il nome logico in container. Un solo artefatto, due ambienti, nessun indirizzo nel codice.
+
+*Da verificare e allegare al report* — dimostrazione con più repliche:
+```bash
+docker compose up -d --scale drone-service=3
+# poi qualche richiesta e si osserva nei log che le chiamate del delivery-service
+# finiscono su container diversi -> il DNS di Docker sta bilanciando
+```
+Serve a passare da "Docker lo fa" a "verificato con 3 repliche", che è ciò che rende difendibile un pattern implementato a livello di piattaforma.
 - **Circuit Breaker** (*Design for failure*, module-3.1 p. 9 categoria *Reliability*): sui proxy sincroni, con `vertx-circuit-breaker`. Evita fallimenti a cascata (fail fast + fallback). Si aggancia al gateway e al QAS di availability.
 
 *(Alternativa di ripiego se il tempo stringe: Externalized Configuration — già implementato, sez. 3.1 — è un pattern Richardson a tutti gli effetti, e il DNS interno di Docker Compose è Service Discovery server-side.)*

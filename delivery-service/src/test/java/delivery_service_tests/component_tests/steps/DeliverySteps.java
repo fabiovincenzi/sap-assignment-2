@@ -1,7 +1,8 @@
-package delivery_service_tests.steps;
+package delivery_service_tests.component_tests.steps;
 
 import io.cucumber.java.en.*;
 import sap.shipping.delivery.application.DeliveryService;
+import sap.shipping.delivery.application.DeliveryServiceImpl;
 import sap.shipping.delivery.application.DroneServicePort;
 import sap.shipping.delivery.application.OrderServicePort;
 import sap.shipping.delivery.domain.Delivery;
@@ -30,7 +31,7 @@ public class DeliverySteps {
             public void releaseDrone(String droneId) {}
         };
         OrderServicePort orderPort = orderId -> {};
-        deliveryService = new DeliveryService(repo, dronePort, orderPort);
+        deliveryService = new DeliveryServiceImpl(repo, dronePort, orderPort);
     }
 
     @When("a delivery is scheduled for order {string} from \\({double}, {double}) to \\({double}, {double}) weighing {double} kg")

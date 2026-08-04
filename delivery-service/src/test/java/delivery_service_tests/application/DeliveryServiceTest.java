@@ -1,4 +1,4 @@
-package delivery_service_tests;
+package delivery_service_tests.application;
 
 import org.junit.jupiter.api.Test;
 import sap.shipping.delivery.application.*;
@@ -17,7 +17,7 @@ public class DeliveryServiceTest {
             public void releaseDrone(String id) { released.add(id); }
         };
         OrderServicePort order = notified::add;
-        var service = new DeliveryService(repo, drone, order);
+        var service = new DeliveryServiceImpl(repo, drone, order);
 
         var d = service.scheduleDelivery("order-9", 44.0, 12.0, 44.1, 12.1, 2.0);
         service.startDelivery(d.getId());

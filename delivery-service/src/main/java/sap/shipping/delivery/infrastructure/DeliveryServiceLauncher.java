@@ -5,7 +5,7 @@ import java.util.logging.Logger;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Vertx;
-import sap.shipping.delivery.application.DeliveryService;
+import sap.shipping.delivery.application.DeliveryServiceImpl;
 ;
 
 public class DeliveryServiceLauncher extends AbstractVerticle {
@@ -34,7 +34,7 @@ public class DeliveryServiceLauncher extends AbstractVerticle {
         var droneProxy = new DroneServiceProxy(DRONE_HOST, DRONE_PORT);
         var orderProxy = new OrderServiceProxy(ORDER_HOST, ORDER_PORT);
 
-        var service = new DeliveryService(repo, droneProxy, orderProxy);
+        var service = new DeliveryServiceImpl(repo, droneProxy, orderProxy);
         var controller = new DeliveryController(service);
 
         try {

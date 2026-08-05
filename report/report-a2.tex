@@ -1,0 +1,536 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{amsmath}
+
+\geometry{margin=2.5cm}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!60!black,
+    urlcolor=blue!60!black,
+    citecolor=blue!60!black
+}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!5},
+    showstringspaces=false,
+    tabsize=2
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Shipping on the Air with Patterns}
+\fancyhead[R]{\small SAP - Assignment 2}
+\fancyfoot[C]{\thepage}
+
+\title{
+    \textbf{Shipping on the Air with Patterns} \\[0.5em]
+    \large Assignment \#02 - Software Architecture and Platforms \\[0.3em]
+    \normalsize A.Y. 2025/2026
+}
+\author{Fabio Vincenzi}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ============================================================
+\section{Introduzione}
+
+Questo documento descrive, a livello architetturale, come il sistema \emph{Shipping on the Air}
+progettato nell'Assignment~1 sia stato raffinato applicando un sottoinsieme dei microservices
+patterns discussi nel corso.
+
+Il dominio e le funzionalit\`a non cambiano: il sistema resta composto da \texttt{order-service},
+\texttt{delivery-service} e \texttt{drone-service}, ai quali si aggiunge l'\texttt{api-gateway}.
+Ci\`o che cambia \`e il modo in cui i servizi comunicano con l'esterno, vengono osservati a runtime,
+persistono il proprio stato e vengono verificati.
+
+Ogni pattern \`e presentato indicando il problema che risolve nel contesto specifico del progetto,
+la soluzione adottata e le conseguenze, incluse quelle negative. Dove possibile le affermazioni
+sono accompagnate da misure raccolte sul sistema in esecuzione.
+
+\paragraph{Pattern applicati.} Oltre ai tre richiesti dalla consegna --- API Gateway,
+Observability Patterns (Health Check API e Application Metrics) ed Event Sourcing applicato a un
+servizio --- sono stati scelti \textbf{CQRS} e \textbf{Service Discovery}. La scelta non \`e
+arbitraria: come argomentato nella sezione~\ref{sec:cqrs}, CQRS non \`e un'aggiunta facoltativa ma
+una conseguenza tecnica diretta dell'Event Sourcing.
+
+% ============================================================
+\section{Quality Attribute Scenarios}
+\label{sec:qas}
+
+Gli attributi di qualit\`a individuati nell'Assignment~1 sono stati riformulati in due scenari
+concreti, secondo la struttura in sei parti vista a lezione. Entrambi riguardano la stessa
+propriet\`a architetturale --- la \emph{degradazione controllata} --- ma sotto due stimoli diversi:
+il guasto di un servizio e l'esaurimento di una risorsa.
+
+\begin{lstlisting}[caption={QAS-A --- Availability: guasto di un servizio a valle}]
+Source            un guasto infrastrutturale
+Stimulus          il drone-service diventa irraggiungibile
+Environment       operazioni normali, sistema deployato in container
+Artifact          delivery-service e piattaforma di deployment
+Response          il guasto viene rilevato e il sistema continua ad
+                  accettare ordini e a programmare consegne, senza
+                  assegnare droni
+Response Measure  rilevamento entro 15 s; nessun fallimento propagato
+                  al cliente
+\end{lstlisting}
+
+\begin{lstlisting}[caption={QAS-B --- Saturazione: flotta di droni esaurita}]
+Source            domanda superiore alla capacita del sistema
+Stimulus          arriva un ordine quando tutti i droni sono occupati
+Environment       operazioni normali, flotta satura
+Artifact          delivery-service e drone-service
+Response          l'ordine viene accettato e la consegna programmata,
+                  in attesa che un drone si liberi
+Response Measure  nessun ordine rifiutato; saturazione osservabile
+                  come drones_available = 0
+\end{lstlisting}
+
+La verifica di questi scenari \`e discussa nella sezione~\ref{sec:osservabilita-qas}, dopo aver
+introdotto gli observability pattern che li rendono misurabili.
+
+% ============================================================
+\section{Deployment}
+
+Il sistema adotta il pattern \textbf{Service per Container}: ogni microservizio viene impacchettato
+in un'immagine Docker separata e il sistema completo \`e descritto da un file Docker Compose.
+
+Ogni servizio ha un \texttt{Dockerfile} \textbf{multi-stage}: un primo stage basato su JDK e Gradle
+esegue \texttt{installDist}, un secondo stage contiene solo il JRE e la distribuzione prodotta.
+L'immagine finale non contiene quindi n\'e il JDK n\'e il build tool. Il contesto di build \`e la
+radice del monorepo, perch\'e tutti i servizi dipendono dal modulo \texttt{common}.
+
+Il file \texttt{docker-compose.yml} definisce la rete logica \texttt{shipping\_network}, alla quale
+tutti i servizi sono collegati, e imposta per ciascuno la policy \texttt{restart: unless-stopped} e
+un \texttt{healthcheck} (sezione~\ref{sec:healthcheck}). La configurazione dipendente dall'ambiente
+\`e iniettata tramite variabili d'ambiente, secondo il pattern \textbf{Externalized Configuration}:
+i launcher leggono host e porta dei servizi con cui devono comunicare, usando \texttt{localhost}
+come valore di fallback. Lo stesso artefatto funziona quindi sia in esecuzione locale sia in
+container, senza modifiche al codice.
+
+% ============================================================
+\section{Patterns}
+
+\subsection{API Gateway}
+
+\paragraph{Problema.} Senza un punto di ingresso unico, un client dovrebbe conoscere indirizzo e
+numero dei servizi, effettuare pi\`u chiamate per popolare una singola schermata e ogni servizio
+dovrebbe reimplementare le funzionalit\`a trasversali.
+
+\paragraph{Soluzione.} \`E stato aggiunto il modulo \texttt{api-gateway} (porta 8080, prefisso
+\texttt{/api/v1}), unico componente esposto all'esterno. Il \texttt{GatewayController} instrada le
+richieste verso il servizio competente attraverso tre proxy (\texttt{OrderServiceProxy},
+\texttt{DeliveryServiceProxy}, \texttt{DroneServiceProxy}), definiti come porte in uscita
+nell'application layer e implementati nell'infrastructure layer.
+
+\paragraph{API Composition.} L'endpoint di tracking \texttt{GET /api/v1/tracking/:orderId} non si
+limita a instradare: interroga l'\texttt{order-service} e il \texttt{delivery-service} e
+\textbf{unisce le due risposte} in un unico oggetto \texttt{TrackingInfo}. \`E un'applicazione del
+pattern \emph{API Composition}, necessario perch\'e con un database per servizio non \`e possibile
+eseguire join tra dati di servizi diversi. Il client effettua una chiamata sola invece di due.
+
+Poich\'e i proxy sono sincroni e bloccanti, le chiamate a valle sono eseguite tramite
+\texttt{executeBlocking} con \texttt{ordered = false}, in modo da non bloccare l'event loop di
+Vert.x.
+
+\paragraph{Conseguenze.} Il gateway semplifica i client e disaccoppia il loro codice dalla struttura
+interna del sistema, ma introduce un componente che deve essere reso altamente disponibile e che
+va aggiornato ogni volta che cambia un'API a valle.
+
+\subsection{Observability Patterns}
+
+\subsubsection{Health Check API}
+\label{sec:healthcheck}
+
+Tutti e quattro i componenti espongono un endpoint \texttt{/health} che restituisce lo stato del
+servizio nel formato MicroProfile Health (\texttt{status} e lista di \texttt{checks}).
+
+L'endpoint non serve solo alla diagnosi manuale: \`e consumato dall'attributo \texttt{healthcheck}
+del Docker Compose file, che lo interroga periodicamente e marca il container come
+\texttt{unhealthy} in caso di fallimento. Combinato con la policy di restart, questo permette alla
+piattaforma di reagire autonomamente a un servizio bloccato.
+
+\subsubsection{Application Metrics}
+
+Ogni componente espone metriche in formato Prometheus su una \textbf{porta dedicata}, distinta da
+quella di servizio, tramite l'\texttt{HTTPServer} della libreria \texttt{io.prometheus}. Un
+container \texttt{prometheus} raccoglie i quattro target con \texttt{scrape\_interval: 10s}.
+
+\begin{table}[H]
+\centering
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Componente} & \textbf{Metrica} & \textbf{Tipo e significato} \\
+\midrule
+order-service & \texttt{orders\_placed\_total} & counter: ordini creati \\
+delivery-service & \texttt{deliveries\_in\_progress} & gauge: consegne in corso \\
+drone-service & \texttt{drones\_available} & gauge: droni liberi \\
+api-gateway & \texttt{gateway\_requests\_total} & counter: richieste ricevute \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+La scelta del tipo di metrica riflette la natura del fenomeno osservato: un \emph{counter} per
+eventi cumulativi che possono solo crescere, un \emph{gauge} per quantit\`a che salgono e scendono.
+Sui counter va sempre usato \texttt{rate()}, poich\'e il valore assoluto si azzera al riavvio del
+processo.
+
+\paragraph{Come sono raccolte.} Per i tre servizi di dominio la strumentazione non \`e inserita nei
+controller ma realizzata tramite \textbf{observer}: l'application layer definisce una porta in
+uscita (ad esempio \texttt{DeliveryServiceObserver}) e l'infrastructure layer ne fornisce un adapter
+(\texttt{PrometheusDeliveryServiceObserver}). Il dominio non conosce quindi Prometheus e resta
+osservabile senza esserne dipendente. Il gateway costituisce un'eccezione consapevole: non avendo un
+core di dominio, la sua metrica \`e puramente infrastrutturale e viene incrementata da un handler di
+routing.
+
+\subsection{Event Sourcing}
+\label{sec:eventsourcing}
+
+\paragraph{Scelta del servizio.} L'Event Sourcing \`e stato applicato al \texttt{delivery-service}.
+\`E un pattern invasivo, che richiede di ristrutturare la business logic, quindi va applicato dove
+produce valore: la consegna ha un ciclo di vita a stati articolato
+(\texttt{SCHEDULED} $\rightarrow$ \texttt{DRONE\_ASSIGNED} $\rightarrow$ \texttt{IN\_TRANSIT}
+$\rightarrow$ \texttt{DELIVERED}/\texttt{FAILED}) e una storia che ha valore di per s\'e --- dove si
+trovava il drone in un dato istante, quando \`e stato assegnato. Applicarlo anche agli altri servizi
+avrebbe aggiunto complessit\`a senza beneficio.
+
+\paragraph{Ristrutturazione dell'aggregate.} Ogni metodo di comando \`e stato separato in due:
+
+\begin{itemize}
+  \item i metodi \texttt{processXxx()} validano la richiesta, \textbf{non modificano lo stato} e
+        restituiscono la lista di eventi da applicare; sono gli unici che possono fallire;
+  \item i metodi \texttt{apply()} aggiornano lo stato a partire da un evento e non possono fallire,
+        perch\'e un evento descrive un fatto gi\`a accaduto.
+\end{itemize}
+
+Tutte e cinque le transizioni emettono ora un evento (\texttt{DeliveryScheduled},
+\texttt{DroneAssigned}, \texttt{TransitStarted}, \texttt{DronePositionUpdated},
+\texttt{DeliveryCompleted}, \texttt{DeliveryFailed}); in precedenza solo due lo facevano.
+
+Una conseguenza non ovvia riguarda il \textbf{determinismo}: poich\'e lo stato viene ricostruito
+riapplicando gli eventi, i metodi \texttt{apply()} non possono contenere sorgenti di
+non-determinismo. L'istante di creazione, prima calcolato con \texttt{Instant.now()} nel costruttore,
+\`e stato spostato \textbf{dentro} l'evento \texttt{DeliveryScheduled}, in modo che ogni replay
+riproduca esattamente lo stesso stato.
+
+\paragraph{Event store.} La porta \texttt{DeliveryEventStore} espone \texttt{append}, \texttt{load} e
+\texttt{loadFrom}: non esiste alcuna operazione di modifica o cancellazione, quindi l'append-only
+\`e garantito dalla forma dell'interfaccia e non dalla disciplina di chi la usa.
+
+Il metodo \texttt{append} riceve una \texttt{expectedVersion}, cio\`e la versione a cui il chiamante
+ha letto l'aggregate, e rifiuta la scrittura se lo stream \`e nel frattempo avanzato. \`E un
+controllo di \textbf{concorrenza ottimistica} che impedisce a due comandi concorrenti di credersi
+entrambi l'ultimo, e costituisce la differenza sostanziale tra un event store e una semplice coda di
+messaggi.
+
+\paragraph{Snapshot.} Poich\'e il \texttt{delivery-service} riceve aggiornamenti di posizione ad alta
+frequenza, lo stream di una consegna cresce indefinitamente e il costo di ogni lettura crescerebbe
+con esso. Viene quindi persistito uno snapshot dello stato ogni 50 eventi: il caricamento parte dallo
+snapshot pi\`u recente e riapplica soltanto gli eventi successivi.
+
+Misurato in locale su uno stream di 1003 eventi, con media su 2000 caricamenti dopo warm-up:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lc}
+\toprule
+& \textbf{Tempo per \texttt{findById}} \\
+\midrule
+senza snapshot (replay di 1003 eventi) & 0,013 ms \\
+con snapshot (replay dei soli eventi successivi) & 0,004 ms \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Il guadagno misurato \`e di circa 3,6$\times$. Il rapporto \`e contenuto perch\'e event store e
+snapshot sono in memoria e gli eventi hanno un payload minimo, quindi si sta misurando il solo costo
+del \emph{fold}; con una persistenza su database il divario crescerebbe, dovendo leggere 1003 righe
+invece di uno snapshot e pochi eventi. Il punto architetturale, comunque, non \`e il fattore ma il
+fatto che il costo passi da $O(\text{numero di eventi})$ a $O(\text{eventi dopo lo snapshot})$, cio\`e
+da crescente a costante.
+
+Lo snapshot \`e \textbf{stato derivato}: eliminarlo lascia il sistema corretto, solo pi\`u lento.
+La propriet\`a \`e verificata dal test \texttt{droppingEverySnapshotKeepsTheStateCorrect}, che carica
+la stessa consegna con e senza snapshot e confronta i due stati risultanti.
+
+\subsection{CQRS}
+\label{sec:cqrs}
+
+\paragraph{Perch\'e \`e necessario.} Un event store risponde soltanto per chiave primaria, cio\`e per
+identificatore di consegna. Il \texttt{DeliveryRepository}, per\`o, espone anche
+\texttt{findByOrderId} e \texttt{findByDroneId}: due interrogazioni su campi che chiave non sono.
+Dopo l'introduzione dell'Event Sourcing queste operazioni non sarebbero pi\`u implementabili se non
+ricostruendo l'intero insieme delle consegne a ogni richiesta.
+
+CQRS non \`e quindi un pattern aggiunto per scelta estetica, ma la conseguenza diretta della
+decisione presa nella sezione~\ref{sec:eventsourcing}: \textbf{\`e l'Event Sourcing a imporlo}.
+
+\paragraph{Soluzione.} I due lati sono separati anche strutturalmente:
+
+\begin{itemize}
+  \item il \textbf{write model} \`e costituito dall'aggregate e dall'event store, append-only e
+        fonte di verit\`a;
+  \item il \textbf{read model} \`e la porta \texttt{DeliveryLookupView} con il relativo adapter, che
+        mantiene due indici \texttt{orderId $\rightarrow$ deliveryId} e
+        \texttt{droneId $\rightarrow$ deliveryId};
+  \item il \texttt{DeliveryProjector} traduce gli eventi in aggiornamenti della vista ed \`e
+        \textbf{l'unico componente autorizzato a scriverci}.
+\end{itemize}
+
+Il repository scrive attraverso il projector e legge attraverso la vista: i comandi non toccano mai
+il read model e le interrogazioni non attraversano mai il modello di dominio.
+
+La vista contiene deliberatamente i soli identificatori e non lo stato della consegna. In questo modo
+l'unica informazione duplicata \`e una corrispondenza che non cambia mai nel tempo: nel peggiore dei
+casi una consegna non viene trovata, mai vengono restituiti dati errati.
+
+\paragraph{Ricostruibilit\`a.} Il metodo \texttt{rebuildLookupView()} svuota la vista e la ricostruisce
+riapplicando tutti gli eventi memorizzati, usando la stessa funzione di proiezione impiegata a regime.
+Anche il read model, come lo snapshot, \`e dato derivato: il test
+\texttt{theViewCanBeDroppedAndRebuiltFromTheEvents} lo dimostra.
+
+\paragraph{Consistenza.} Nell'implementazione realizzata la proiezione \`e invocata in modo sincrono
+subito dopo la scrittura degli eventi, quindi la vista \`e sempre allineata e non si manifesta il
+problema del \emph{read-your-own-writes}. In cambio non si ottiene il disaccoppiamento completo: il
+passaggio a una proiezione asincrona richiederebbe di spostare la chiamata al projector dietro una
+sottoscrizione all'event store, \textbf{senza modificare n\'e la vista n\'e il repository}, proprio
+perch\'e la vista \`e una porta separata.
+
+\subsection{Service Discovery}
+
+\paragraph{Problema.} In un deployment a container gli indirizzi dei servizi sono dinamici, quindi non
+possono essere scritti nel codice n\'e in un file di configurazione statico.
+
+\paragraph{Soluzione.} Il pattern \`e realizzato \textbf{a livello di deployment}: Docker fornisce
+nativamente un service registry e un DNS resolver interno, assegnando a ogni servizio un nome sulla
+rete \texttt{shipping\_network}. Si tratta del modello \emph{server-side discovery}: il chiamante usa
+sempre lo stesso nome logico e l'infrastruttura risolve verso un'istanza attiva.
+
+Un dettaglio determinante \`e che le variabili d'ambiente iniettate dal Compose file puntano ai
+\textbf{nomi di servizio} (\texttt{DELIVERY\_HOST=delivery-service}) e non ai
+\texttt{container\_name} (\texttt{delivery-01}). \`E la differenza tra discovery effettiva e indirizzo
+fisso: il nome di servizio viene risolto dinamicamente e, in presenza di pi\`u repliche, distribuito
+tra tutte; il nome del container punterebbe sempre alla stessa istanza.
+
+Il pattern si integra con l'Externalized Configuration: lo stesso artefatto usa \texttt{localhost} in
+esecuzione locale e il nome logico in container. I limiti attuali di questa configurazione sono
+discussi nella sezione~\ref{sec:limiti}.
+
+% ============================================================
+\section{Testing}
+
+La strategia di testing segue la test pyramid, con almeno un esempio per ciascun livello. I livelli
+sono distinti nella struttura dei package, in modo che la piramide sia leggibile dall'organizzazione
+del codice e non solo da questa descrizione.
+
+\subsection{Unit}
+
+Gli unit test sono organizzati per strato dell'architettura esagonale, seguendo la distinzione tra
+test \emph{solitary} (dipendenze sostituite da mock) e \emph{sociable} (dipendenze reali).
+
+\begin{itemize}
+  \item \textbf{application}: \texttt{DeliveryServiceTest} verifica che il completamento di una
+        consegna notifichi l'order-service e rilasci il drone; le porte verso gli altri servizi sono
+        sostituite da stub. \`E un test \emph{solitary}.
+  \item \textbf{infrastructure}: \texttt{DeliveryEventStoreTest}, \texttt{DeliverySnapshotTest} e
+        \texttt{DeliveryProjectionTest} verificano gli adapter di persistenza --- append-only,
+        ordinamento, rifiuto delle scritture concorrenti, replay, snapshot e ricostruzione della vista
+        --- usando gli oggetti di dominio reali. Sono test \emph{sociable}.
+  \item \textbf{controller}: \texttt{DeliveryControllerTest} verifica rotte, parsing del payload,
+        codici di stato e formato JSON, con un \texttt{DeliveryServiceMock} al posto del servizio.
+        \`E un test \emph{solitary}: il soggetto \`e una sola classe, e la porta HTTP \`e soltanto il
+        modo in cui un adapter di questo tipo pu\`o essere invocato.
+\end{itemize}
+
+Un test merita una nota particolare: \texttt{DeliveryEventStoreTest} verifica che l'istante di
+creazione sopravviva identico a un replay, proteggendo cos\`i la propriet\`a di determinismo
+descritta nella sezione~\ref{sec:eventsourcing}.
+
+\subsection{Integration}
+
+\texttt{DroneServiceProxyTest} verifica il contratto tra due servizi: il \texttt{DroneController}
+reale del drone-service viene avviato su una porta di test con un servizio applicativo reale su
+repository in memoria, e vi si punta contro il \texttt{DroneServiceProxy} reale del delivery-service.
+Ci\`o che viene verificato non \`e la logica di business, ma che URL, query parameter, formato JSON e
+codici di stato dei due lati coincidano.
+
+Essendo il progetto un monorepo Gradle, il test dichiara semplicemente
+\texttt{testImplementation project(':drone-service')}: non \`e stato necessario duplicare classi tra i
+moduli, e la dipendenza esiste soltanto in ambito di test.
+
+Un caso di questo gruppo verifica una propriet\`a rilevante per la sezione~\ref{sec:osservabilita-qas}:
+con il servizio a valle irraggiungibile, il proxy restituisce un risultato vuoto anzich\'e propagare
+l'eccezione.
+
+\subsection{Component}
+
+Gli acceptance test del singolo servizio sono scritti in Gherkin ed eseguiti con Cucumber. Il
+delivery-service viene avviato \textbf{per intero} --- controller, application layer e persistenza a
+eventi --- su una porta di test, e gli step lo interrogano \textbf{attraverso la sua API HTTP}, come
+farebbe un client. Solo le porte verso gli altri servizi sono sostituite da stub.
+
+Il confine del test \`e quindi l'API pubblica del servizio, non le sue classi: gli step manipolano
+oggetti JSON e non hanno accesso al modello di dominio. Ne consegue che una modifica interna non
+rompe questi test, mentre una modifica al contratto pubblico s\`i --- che \`e esattamente il
+comportamento desiderato per un acceptance test.
+
+Si tratta di component test \emph{in-process}: la rete e il protocollo HTTP sono reali, mentre la
+verifica del packaging in container \`e demandata al livello end-to-end.
+
+\subsection{End-to-end}
+
+Il modulo separato \texttt{system-end-to-end} contiene uno user journey che attraversa l'intero
+sistema passando esclusivamente dall'API gateway: registrazione di un drone e di un utente, creazione
+di un ordine, conferma, e verifica che il tracking riporti una consegna con un drone assegnato. Il
+percorso esercita tutti e quattro i componenti e l'API Composition del gateway.
+
+Poich\'e richiede il sistema in esecuzione, questo modulo \`e escluso dalla build ordinaria ed \`e
+attivato da una propriet\`a esplicita:
+
+\begin{lstlisting}[caption={Esecuzione dei test end-to-end}]
+docker compose up -d
+./gradlew :system-end-to-end:test -Pe2e
+\end{lstlisting}
+
+\subsection{Fitness function}
+
+Oltre ai quattro livelli, ogni servizio include un \texttt{ArchitectureTest} basato su ArchUnit, che
+verifica che il dominio non dipenda da application e infrastructure, che le porte risiedano
+nell'application layer e che gli adapter risiedano nell'infrastructure layer. Non appartiene alla test
+pyramid: \`e una \emph{fitness function}, cio\`e un controllo automatico di una caratteristica
+architetturale, e come tale uno strumento di governance dell'architettura.
+
+% ============================================================
+\section{Observability al servizio dei Quality Attribute Scenarios}
+\label{sec:osservabilita-qas}
+
+Un Quality Attribute Scenario \`e verificabile solo se la sua \emph{Response Measure} \`e osservabile.
+Senza strumentazione uno scenario resta un'intenzione: \`e questo il ruolo degli observability
+pattern rispetto ai requisiti di qualit\`a. La relazione \`e analoga a quella delle fitness function,
+con la differenza che queste verificano caratteristiche architetturali a tempo di build, mentre
+l'observability le verifica a runtime.
+
+Entrambi gli scenari della sezione~\ref{sec:qas} sono stati tradotti in test eseguibili
+(\texttt{QualityAttributeScenariosTest}) che provocano la condizione avversa e leggono le metriche.
+
+\subsection{QAS-A --- Availability}
+
+Gli observability pattern coinvolti sono due. L'\textbf{Health Check API} rende interrogabile lo stato
+di ciascun servizio; le \textbf{Application Metrics} lo trasformano in una serie temporale, perch\'e
+Prometheus genera automaticamente per ogni target la metrica \texttt{up}, pari a 1 finch\'e lo scrape
+riesce e 0 appena fallisce. \`E il punto in cui i due pattern si saldano.
+
+Il test arresta il container del drone-service, attende che la metrica cambi e verifica il
+comportamento del sistema in quello stato:
+
+\begin{lstlisting}[caption={Esito osservato}]
+up{job="monitoring-drone-service"} = 0     (gli altri tre restano a 1)
+guasto rilevato in 8,157 s
+
+ordine creato -> PENDING
+confirm       -> HTTP 200
+tracking      -> hasDelivery: true, deliveryStatus: "SCHEDULED",
+                 droneId: null
+\end{lstlisting}
+
+La consegna viene programmata comunque, semplicemente priva di drone: il guasto non si propaga al
+cliente. Il tempo di rilevamento misurato \`e coerente con lo \texttt{scrape\_interval} di 10~s: la
+latenza di rilevamento \`e determinata dalla frequenza di campionamento, non dal servizio. La
+\emph{Response Measure} dichiarata (entro 15~s) \`e quindi soddisfatta, ma \`e importante osservare
+che essa dipende da una scelta di configurazione dell'infrastruttura di monitoraggio.
+
+\`E utile notare come questa propriet\`a sia coperta due volte, in due modi complementari: il test di
+integrazione \texttt{anUnreachableServiceYieldsNoDrone} la \textbf{garantisce} prima del deploy,
+verificando che il proxy restituisca un risultato vuoto; la metrica la \textbf{osserva} in esercizio.
+
+\subsection{QAS-B --- Saturazione}
+
+Qui l'observability pattern rilevante \`e la sola Application Metrics, attraverso il gauge
+\texttt{drones\_available}. La scelta del tipo di metrica \`e essa stessa parte della soluzione: un
+gauge pu\`o salire e scendere ed \`e quindi adatto a rappresentare una risorsa esauribile, mentre un
+counter potrebbe solo indicare quanti droni siano stati registrati complessivamente.
+
+Il test crea e conferma ordini finch\'e il gauge non raggiunge lo zero, quindi effettua un ulteriore
+ordine e verifica che venga comunque accettato e programmato, in attesa di un drone. La forma della
+risposta \`e la stessa del QAS-A --- \texttt{SCHEDULED} con \texttt{droneId} nullo --- ma la causa \`e
+l'esaurimento di una risorsa anzich\'e un guasto.
+
+% ============================================================
+\section{Limiti noti}
+\label{sec:limiti}
+
+\paragraph{I servizi non sono replicabili orizzontalmente.} La configurazione attuale prevede
+un'istanza per servizio. Tentando di avviare pi\`u repliche emergono tre ostacoli, di gravit\`a
+crescente: i \texttt{container\_name} espliciti impediscono lo scaling, perch\'e i nomi devono essere
+univoci; la pubblicazione di porte fisse sull'host causa un conflitto di binding; e soprattutto i
+servizi mantengono lo stato in repository in memoria, per cui repliche diverse avrebbero stati
+divergenti. I primi due ostacoli sono scelte di leggibilit\`a in fase di sviluppo, facilmente
+reversibili; il terzo \`e strutturale. La strada per lo scaling passa dall'estrarre lo stato in uno
+store condiviso, operazione che nel delivery-service richiederebbe di sostituire il solo adapter, dato
+che l'event store \`e gi\`a definito dietro una porta.
+
+\paragraph{La persistenza \`e in memoria.} L'event store, gli snapshot e la vista di lettura sono
+implementati con strutture dati in memoria, coerentemente con gli esempi visti a lezione. Ne consegue
+che la storia degli eventi non sopravvive al riavvio di un container, il che \`e in tensione con uno
+dei benefici dell'Event Sourcing, l'audit trail permanente. Anche in questo caso il costo del
+cambiamento \`e limitato alla sostituzione dell'adapter.
+
+\paragraph{Non tutti i QAS sono misurabili.} Lo scenario di performance formulato nell'Assignment~1
+--- tracking con latenza inferiore al secondo --- non \`e verificabile con la strumentazione attuale,
+composta da counter e gauge, che indicano quante richieste siano state servite ma non quanto tempo
+abbiano impiegato. Servirebbe un istogramma delle durate sul gateway, dal quale ricavare i percentili.
+La conseguenza generale merita di essere esplicitata: \textbf{lo strumento di misura determina quali
+attributi di qualit\`a \`e possibile promettere}.
+
+\paragraph{Event Sourcing parziale.} L'event store realizzato copre il lato database della
+definizione, ossia l'inserimento e il recupero degli eventi per chiave, ma non espone un meccanismo di
+sottoscrizione: le notifiche verso gli altri servizi restano effettuate esplicitamente dall'application
+layer. Non sono inoltre affrontate l'evoluzione dello schema degli eventi n\'e la cancellazione dei
+dati personali, entrambe rilevanti in un sistema destinato alla produzione.
+
+% ============================================================
+\section{Conclusioni}
+
+L'applicazione dei pattern ha modificato il sistema lungo tre direzioni distinte.
+
+Verso l'esterno, l'API Gateway ha reso il sistema utilizzabile attraverso un unico punto di ingresso,
+nascondendo ai client la decomposizione interna; l'API Composition ha reso possibile una query che
+attraversa due servizi, altrimenti impraticabile con un database per servizio.
+
+A runtime, gli observability pattern hanno trasformato requisiti di qualit\`a in propriet\`a
+misurabili. \`E l'aspetto pi\`u significativo del lavoro: senza strumentazione, uno scenario come
+``il guasto di un servizio non deve propagarsi'' non sarebbe stato n\'e verificabile n\'e
+dimostrabile, mentre \`e stato possibile misurarne il rilevamento in 8,157~s e osservare il sistema
+continuare a operare in modo degradato.
+
+Sulla persistenza, l'Event Sourcing ha sostituito la memorizzazione dello stato con quella della sua
+storia, ottenendo un registro immutabile e la possibilit\`a di ricostruire lo stato a qualunque
+istante, al prezzo di una ristrutturazione della business logic e della necessit\`a di introdurre
+CQRS per le interrogazioni non basate su chiave. Quest'ultimo punto \`e forse l'insegnamento pi\`u
+utile dell'intero assignment: i pattern non sono elementi indipendenti da collezionare, ma soluzioni
+che si richiamano l'una con l'altra, e adottarne uno significa spesso accettarne un secondo.
+
+Infine, la test pyramid ha permesso di distribuire la verifica su livelli con obiettivi diversi ---
+dalla singola classe fino allo user journey attraverso il sistema completo --- e di collegare i test
+alle metriche: le stesse propriet\`a garantite dai test prima del deploy sono osservate dalle metriche
+durante l'esercizio.
+
+\end{document}

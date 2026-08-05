@@ -296,19 +296,42 @@ La consegna viene **programmata comunque**, semplicemente senza drone (`SCHEDULE
 
 **Miglioria naturale, se ci fosse tempo:** un Circuit Breaker eviterebbe di ritentare inutilmente verso un servizio noto come giù, e la sua metrica di stato renderebbe il QAS ancora più diretto.
 
-### QAS-B — Performance: latenza del tracking ⬜
+### QAS-B — Saturazione delle risorse: flotta di droni esaurita ✅ *verificato*
 
-Corrisponde a **QAS-1** di A1 (*"posizione e ETA aggiornati, < 1 s di latenza"*).
+| Source | Stimulus | Environment | Artifact | Response | Response Measure |
+|---|---|---|---|---|---|
+| Domanda superiore alla capacità | Arriva un ordine quando tutti i droni sono occupati | Operazioni normali, flotta satura | Delivery Service + Drone Service | L'ordine è accettato e la consegna programmata, in attesa di un drone | Nessun ordine rifiutato; `drones_available = 0` osservabile |
 
-**Stato:** non ancora implementabile. Le metriche attuali sono quattro — `orders_placed_total`, `deliveries_in_progress`, `drones_available`, `gateway_requests_total` — cioè **contatori e gauge**: dicono *quante* richieste, non *quanto tempo* impiegano. Manca un **istogramma di latenza** sul gateway.
+**Observability pattern che lo implementa:** **Application Metrics** — il gauge `drones_available` esposto dal drone service. Un gauge (sale e scende) è il tipo giusto per una risorsa esauribile, mentre un counter direbbe solo quanti droni sono stati registrati in totale.
 
-**Cosa serve:** un `gateway_request_duration_seconds` (Histogram di `io.prometheus`) misurato attorno all'handler, e poi il percentile via PromQL:
+**Prova raccolta:** saturata la flotta creando e confermando ordini finché `drones_available` non arriva a 0, l'ordine successivo viene comunque accettato:
 
-```promql
-histogram_quantile(0.95, rate(gateway_request_duration_seconds_bucket[1m]))
+```
+deliveryStatus = "SCHEDULED",  droneId = null
 ```
 
-Da cui la `Response Measure` diventa verificabile: *il 95° percentile delle richieste di tracking resta sotto N ms*. È l'aggiunta più piccola che trasforma un QAS dichiarato in un QAS misurato.
+Cioè la consegna esiste ed è in attesa, invece di essere rifiutata. La stessa forma di risposta del QAS-A, ma per **esaurimento di risorse** anziché per guasto.
+
+### Entrambi i QAS sono eseguibili
+
+`system-end-to-end/.../QualityAttributeScenariosTest` traduce i due scenari in test automatici che leggono le metriche, sullo stesso modello del `PerformanceTest`/`CircuitBreakerTest` del lab di riferimento:
+
+| Test | Cosa fa | Misura letta |
+|---|---|---|
+| QAS-A | `docker compose stop drone-service`, attende il rilevamento, poi ordina | `up{job="monitoring-drone-service"}` da Prometheus |
+| QAS-B | satura la flotta, poi ordina | `drones_available` letto alla sorgente |
+
+**Numeri misurati:** guasto rilevato in **8,157 s** (budget 30 s), coerente con lo `scrape_interval: 10s` di Prometheus — la latenza di rilevamento è determinata dalla frequenza di scraping, non dal servizio.
+
+Il QAS-A ripristina il servizio in un blocco `finally`, così il sistema resta utilizzabile anche se il test fallisce.
+
+**Il ciclo completo, da citare nel report:**
+
+```
+QAS (la promessa)  →  metrica (la misura)  →  test (la verifica automatica)
+```
+
+**Nota su cosa NON è misurabile oggi:** il QAS-1 di A1 (*"tracking con latenza < 1 s"*) resta fuori portata, perché le quattro metriche applicative sono contatori e gauge: dicono *quante* richieste, non *quanto tempo* impiegano. Servirebbe un istogramma `gateway_request_duration_seconds` sul gateway e poi `histogram_quantile(0.95, rate(..._bucket[1m]))`. È l'onesta ammissione da mettere nel report: **lo strumento determina quali QAS puoi promettere**.
 
 ---
 

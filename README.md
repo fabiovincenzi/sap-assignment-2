@@ -8,7 +8,7 @@ Drone-based package delivery system: three microservices behind an API gateway.
 ./gradlew installDist
 ```
 
-## Run with Docker (recommended)
+## Run with Docker
 
 ```
 docker compose up -d

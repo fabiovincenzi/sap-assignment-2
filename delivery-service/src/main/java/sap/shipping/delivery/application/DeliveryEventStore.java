@@ -19,8 +19,8 @@ public interface DeliveryEventStore {
      * Appends events to the stream of a delivery.
      *
      * @param expectedVersion version the caller has read the aggregate at; if the stream has
-     *                        moved on in the meantime the append is rejected, so that two
-     *                        concurrent commands cannot both believe they are the latest.
+     *                        moved on in the meantime the append is rejected (optimistic
+     *                        concurrency).
      */
     void append(DeliveryId id, long expectedVersion, List<DomainEvent> events);
 
@@ -33,9 +33,6 @@ public interface DeliveryEventStore {
     /** Number of events stored for a delivery, i.e. its current version. */
     long currentVersion(DeliveryId id);
 
-    /**
-     * Ids of every delivery with a stream. Commands never need it - it is there to rebuild
-     * read models, the way real event stores expose a global stream next to the per-key one.
-     */
+    /** Ids of every delivery with a stream. Used to rebuild the read models. */
     List<DeliveryId> streamIds();
 }

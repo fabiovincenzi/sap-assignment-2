@@ -57,40 +57,40 @@ public class Delivery implements Aggregate<DeliveryId> {
         emit(processSchedule(id, orderId, route, weightKg, Instant.now()));
     }
 
-    // --- process: validate, produce events, do not mutate ---
+    // --- process: validate, produce the event, do not mutate ---
 
-    public List<DomainEvent> processSchedule(DeliveryId id, String orderId, Route route,
-                                             double weightKg, Instant createdAt) {
-        return List.of(new DeliveryScheduled(id, orderId, route, weightKg, createdAt));
+    public DomainEvent processSchedule(DeliveryId id, String orderId, Route route,
+                                       double weightKg, Instant createdAt) {
+        return new DeliveryScheduled(id, orderId, route, weightKg, createdAt);
     }
 
-    public List<DomainEvent> processAssignDrone(String droneId) {
+    public DomainEvent processAssignDrone(String droneId) {
         if (status != DeliveryStatus.SCHEDULED) {
             throw new IllegalStateException("Can only assign drone to a SCHEDULED delivery");
         }
-        return List.of(new DroneAssigned(id, droneId));
+        return new DroneAssigned(id, droneId);
     }
 
-    public List<DomainEvent> processStartTransit() {
+    public DomainEvent processStartTransit() {
         if (status != DeliveryStatus.DRONE_ASSIGNED) {
             throw new IllegalStateException("Can only start transit from DRONE_ASSIGNED status");
         }
-        return List.of(new TransitStarted(id));
+        return new TransitStarted(id);
     }
 
-    public List<DomainEvent> processUpdatePosition(double lat, double lng) {
-        return List.of(new DronePositionUpdated(id, lat, lng));
+    public DomainEvent processUpdatePosition(double lat, double lng) {
+        return new DronePositionUpdated(id, lat, lng);
     }
 
-    public List<DomainEvent> processComplete() {
+    public DomainEvent processComplete() {
         if (status != DeliveryStatus.IN_TRANSIT) {
             throw new IllegalStateException("Can only complete an IN_TRANSIT delivery");
         }
-        return List.of(new DeliveryCompleted(id, orderId, droneId));
+        return new DeliveryCompleted(id, orderId, droneId);
     }
 
-    public List<DomainEvent> processFail(String reason) {
-        return List.of(new DeliveryFailed(id, orderId, reason));
+    public DomainEvent processFail(String reason) {
+        return new DeliveryFailed(id, orderId, reason);
     }
 
     // --- apply: mutate, never fail ---
@@ -169,9 +169,9 @@ public class Delivery implements Aggregate<DeliveryId> {
         emit(processFail(reason));
     }
 
-    private void emit(List<DomainEvent> events) {
-        events.forEach(this::apply);
-        pendingEvents.addAll(events);
+    private void emit(DomainEvent event) {
+        apply(event);
+        pendingEvents.add(event);
     }
 
     // --- state ---
@@ -192,7 +192,7 @@ public class Delivery implements Aggregate<DeliveryId> {
         return route.estimatedMinutes();
     }
 
-    /** Takes a picture of the current state, to be replayed from instead of the whole stream. */
+    /** Current state, to be replayed from instead of the whole stream. */
     public DeliverySnapshot snapshot() {
         return new DeliverySnapshot(id, orderId, route, weightKg, createdAt,
             status, droneId, currentLat, currentLng, version);

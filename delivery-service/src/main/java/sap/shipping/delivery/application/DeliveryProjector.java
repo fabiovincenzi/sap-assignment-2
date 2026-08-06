@@ -7,8 +7,8 @@ import sap.shipping.delivery.domain.events.DeliveryScheduled;
 import sap.shipping.delivery.domain.events.DroneAssigned;
 
 /**
- * Translates domain events into updates of the read model: the only component allowed to
- * write on the view, exactly as commands are the only ones allowed to write events.
+ * Translates domain events into updates of the read model. It is the only component allowed
+ * to write on the view.
  */
 public class DeliveryProjector {
 

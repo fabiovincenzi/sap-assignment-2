@@ -30,19 +30,30 @@ public class InMemoryDeliveryEventStore implements DeliveryEventStore {
         }
         streams.compute(id, (key, stream) -> {
             var current = stream == null ? List.<StoredEvent>of() : stream;
-            if (current.size() != expectedVersion) {
-                throw new EventStoreConcurrencyException(id, expectedVersion, current.size());
-            }
-            var updated = new ArrayList<>(current);
-            var now = Instant.now();
-            long version = expectedVersion;
-            for (var event : events) {
-                updated.add(new StoredEvent(++version, now, event));
-            }
-            return List.copyOf(updated);
+            requireVersion(id, current.size(), expectedVersion);
+            return withEventsAppended(current, events);
         });
         logger.log(Level.INFO, "append " + events.size() + " event(s) to delivery " + id.value()
-            + " - version " + currentVersion(id));
+            + " - version " + (expectedVersion + events.size()));
+    }
+
+    /** Rejects the append if the stream moved on since the caller read the aggregate. */
+    private static void requireVersion(DeliveryId id, long actual, long expected) {
+        if (actual != expected) {
+            throw new EventStoreConcurrencyException(id, expected, actual);
+        }
+    }
+
+    /** A copy of the stream with the events appended, numbered from its current end. */
+    private static List<StoredEvent> withEventsAppended(List<StoredEvent> current,
+                                                        List<DomainEvent> events) {
+        var updated = new ArrayList<>(current);
+        var recordedAt = Instant.now();
+        long version = current.size();
+        for (var event : events) {
+            updated.add(new StoredEvent(++version, recordedAt, event));
+        }
+        return List.copyOf(updated);
     }
 
     @Override

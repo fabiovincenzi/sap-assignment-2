@@ -26,10 +26,9 @@ import sap.shipping.gateway.domain.UserView;
  * (/api/v1/...) and routes each request to the appropriate service through the
  * outbound ports (proxies).
  *
- * The proxies are synchronous (blocking HTTP), so every handler delegates the
- * call to a worker thread via vertx.executeBlocking(...): the Vert.x event loop
- * must never block, otherwise the gateway would stop serving all other clients.
- * We pass ordered=false so requests are not serialised on the worker.
+ * The proxies are synchronous, so every handler delegates the call to a worker
+ * thread via vertx.executeBlocking(...) with ordered=false, to keep the event
+ * loop free.
  */
 @Adapter
 public class GatewayController {
@@ -94,8 +93,8 @@ public class GatewayController {
 
     /**
      * Health Check API (observability pattern): reports whether the gateway is
-     * able to handle requests. Kept simple (always UP) like the course lab; a
-     * richer variant could probe the downstream services' own /health.
+     * able to handle requests. It does not probe the downstream services, whose
+     * health is reported by their own endpoint.
      */
     private void healthCheck(RoutingContext ctx) {
         var reply = new JsonObject()

@@ -60,8 +60,7 @@ public class OrderController {
     /**
      * Health Check API (observability pattern). Reports whether the service is
      * able to handle requests. The repositories are in-memory, so there is no
-     * external dependency to probe: with a real database, this handler would
-     * run a test query and add its outcome to "checks".
+     * external dependency to probe.
      */
     private void healthCheck(RoutingContext ctx) {
         var reply = new JsonObject()

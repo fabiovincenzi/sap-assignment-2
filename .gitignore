@@ -32,3 +32,5 @@ report/*.toc
 doc/report-notes.md
 doc/event-sourcing-notes.md
 doc/diagrams/
+doc/design/architecture.png
+doc/design/openapi.yaml

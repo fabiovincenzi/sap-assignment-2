@@ -32,7 +32,8 @@ public class QualityAttributeScenariosTest {
     private static final String PROMETHEUS = "http://localhost:9090";
     private static final String DRONE_METRICS = "http://localhost:9493/metrics";
 
-    private static final Duration DETECTION_BUDGET = Duration.ofSeconds(30);
+    /** Response measure declared by QAS-A. */
+    private static final Duration DETECTION_BUDGET = Duration.ofSeconds(15);
     private static final File REPO_ROOT = new File("..");
 
     /**
@@ -50,7 +51,7 @@ public class QualityAttributeScenariosTest {
             assertThat(detectedIn)
                 .as("the failure must be visible in the metrics within the budget")
                 .isLessThan(DETECTION_BUDGET);
-            System.out.println("### QAS-A - guasto rilevato in " + detectedIn.toMillis() + " ms");
+            System.out.println("### QAS-A - failure detected in " + detectedIn.toMillis() + " ms");
 
             var tracking = placeAndConfirmAnOrder();
 
@@ -59,7 +60,7 @@ public class QualityAttributeScenariosTest {
                 .isTrue();
             assertThat(tracking.getString("deliveryStatus")).isEqualTo("SCHEDULED");
             assertThat(tracking.getString("droneId")).isNull();
-            System.out.println("### QAS-A - servizio degradato ma operativo: " + tracking.encode());
+            System.out.println("### QAS-A - degraded but operational: " + tracking.encode());
         } finally {
             docker("start", "drone-service");
             awaitDroneService(true);
@@ -81,7 +82,7 @@ public class QualityAttributeScenariosTest {
             placeAndConfirmAnOrder();
         }
         assertThat(availableDrones()).isZero();
-        System.out.println("### QAS-B - flotta satura: drones_available = 0");
+        System.out.println("### QAS-B - fleet saturated: drones_available = 0");
 
         var tracking = placeAndConfirmAnOrder();
 
@@ -90,7 +91,7 @@ public class QualityAttributeScenariosTest {
             .isTrue();
         assertThat(tracking.getString("deliveryStatus")).isEqualTo("SCHEDULED");
         assertThat(tracking.getString("droneId")).isNull();
-        System.out.println("### QAS-B - ordine accettato senza drone: " + tracking.encode());
+        System.out.println("### QAS-B - order accepted with no drone: " + tracking.encode());
     }
 
     // --- the system, driven through the gateway ---

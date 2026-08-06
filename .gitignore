@@ -27,3 +27,7 @@ report/*.aux
 report/*.log
 report/*.out
 report/*.toc
+
+# working notes (kept locally, not part of the deliverable)
+doc/report-notes.md
+doc/event-sourcing-notes.md

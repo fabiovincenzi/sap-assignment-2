@@ -66,9 +66,8 @@ Ogni pattern \`e presentato indicando il problema che risolve nel contesto speci
 la soluzione adottata e le conseguenze, incluse quelle negative. Dove possibile le affermazioni
 sono accompagnate da misure raccolte sul sistema in esecuzione.
 
-\paragraph{Pattern applicati.} Oltre ai tre richiesti dalla consegna --- API Gateway,
-Observability Patterns (Health Check API e Application Metrics) ed Event Sourcing applicato a un
-servizio --- sono stati scelti \textbf{CQRS} e \textbf{Service Discovery}. La scelta non \`e
+\paragraph{Pattern applicati.} Oltre ai tre richiesti dalla consegna (API Gateway,
+Observability Patterns e Event Sourcing applicato a un servizio) sono stati scelti \textbf{CQRS} e \textbf{Service Discovery}. La scelta non \`e
 arbitraria: come argomentato nella sezione~\ref{sec:cqrs}, CQRS non \`e un'aggiunta facoltativa ma
 una conseguenza tecnica diretta dell'Event Sourcing.
 
@@ -78,10 +77,10 @@ una conseguenza tecnica diretta dell'Event Sourcing.
 
 Gli attributi di qualit\`a individuati nell'Assignment~1 sono stati riformulati in due scenari
 concreti, secondo la struttura in sei parti vista a lezione. Entrambi riguardano la stessa
-propriet\`a architetturale --- la \emph{degradazione controllata} --- ma sotto due stimoli diversi:
+propriet\`a architetturale, la \emph{degradazione controllata}, ma sotto due stimoli diversi:
 il guasto di un servizio e l'esaurimento di una risorsa.
 
-\begin{lstlisting}[caption={QAS-A --- Availability: guasto di un servizio a valle}]
+\begin{lstlisting}[caption={QAS-A, Availability: guasto di un servizio a valle}]
 Source            un guasto infrastrutturale
 Stimulus          il drone-service diventa irraggiungibile
 Environment       operazioni normali, sistema deployato in container
@@ -93,7 +92,7 @@ Response Measure  rilevamento entro 15 s; nessun fallimento propagato
                   al cliente
 \end{lstlisting}
 
-\begin{lstlisting}[caption={QAS-B --- Saturazione: flotta di droni esaurita}]
+\begin{lstlisting}[caption={QAS-B, Saturazione: flotta di droni esaurita}]
 Source            domanda superiore alla capacita del sistema
 Stimulus          arriva un ordine quando tutti i droni sono occupati
 Environment       operazioni normali, flotta satura
@@ -193,7 +192,9 @@ eventi cumulativi che possono solo crescere, un \emph{gauge} per quantit\`a che 
 Sui counter va sempre usato \texttt{rate()}, poich\'e il valore assoluto si azzera al riavvio del
 processo.
 
-\paragraph{Come sono raccolte.} Per i tre servizi di dominio la strumentazione non \`e inserita nei
+\paragraph{Come sono raccolte.}
+\label{sec:metriche-gateway}
+Per i tre servizi di dominio la strumentazione non \`e inserita nei
 controller ma realizzata tramite \textbf{observer}: l'application layer definisce una porta in
 uscita (ad esempio \texttt{DeliveryServiceObserver}) e l'infrastructure layer ne fornisce un adapter
 (\texttt{PrometheusDeliveryServiceObserver}). Il dominio non conosce quindi Prometheus e resta
@@ -208,7 +209,7 @@ routing.
 \`E un pattern invasivo, che richiede di ristrutturare la business logic, quindi va applicato dove
 produce valore: la consegna ha un ciclo di vita a stati articolato
 (\texttt{SCHEDULED} $\rightarrow$ \texttt{DRONE\_ASSIGNED} $\rightarrow$ \texttt{IN\_TRANSIT}
-$\rightarrow$ \texttt{DELIVERED}/\texttt{FAILED}) e una storia che ha valore di per s\'e --- dove si
+$\rightarrow$ \texttt{DELIVERED}/\texttt{FAILED}) e una storia che ha valore di per s\'e: dove si
 trovava il drone in un dato istante, quando \`e stato assegnato. Applicarlo anche agli altri servizi
 avrebbe aggiunto complessit\`a senza beneficio.
 
@@ -216,12 +217,12 @@ avrebbe aggiunto complessit\`a senza beneficio.
 
 \begin{itemize}
   \item i metodi \texttt{processXxx()} validano la richiesta, \textbf{non modificano lo stato} e
-        restituiscono la lista di eventi da applicare; sono gli unici che possono fallire;
+        restituiscono l'evento da applicare; sono gli unici che possono fallire;
   \item i metodi \texttt{apply()} aggiornano lo stato a partire da un evento e non possono fallire,
         perch\'e un evento descrive un fatto gi\`a accaduto.
 \end{itemize}
 
-Tutte e cinque le transizioni emettono ora un evento (\texttt{DeliveryScheduled},
+Tutte e sei le transizioni emettono ora un evento (\texttt{DeliveryScheduled},
 \texttt{DroneAssigned}, \texttt{TransitStarted}, \texttt{DronePositionUpdated},
 \texttt{DeliveryCompleted}, \texttt{DeliveryFailed}); in precedenza solo due lo facevano.
 
@@ -351,9 +352,9 @@ test \emph{solitary} (dipendenze sostituite da mock) e \emph{sociable} (dipenden
         consegna notifichi l'order-service e rilasci il drone; le porte verso gli altri servizi sono
         sostituite da stub. \`E un test \emph{solitary}.
   \item \textbf{infrastructure}: \texttt{DeliveryEventStoreTest}, \texttt{DeliverySnapshotTest} e
-        \texttt{DeliveryProjectionTest} verificano gli adapter di persistenza --- append-only,
-        ordinamento, rifiuto delle scritture concorrenti, replay, snapshot e ricostruzione della vista
-        --- usando gli oggetti di dominio reali. Sono test \emph{sociable}.
+        \texttt{DeliveryProjectionTest} verificano gli adapter di persistenza (append-only,
+        ordinamento, rifiuto delle scritture concorrenti, replay, snapshot e ricostruzione della
+        vista) usando gli oggetti di dominio reali. Sono test \emph{sociable}.
   \item \textbf{controller}: \texttt{DeliveryControllerTest} verifica rotte, parsing del payload,
         codici di stato e formato JSON, con un \texttt{DeliveryServiceMock} al posto del servizio.
         \`E un test \emph{solitary}: il soggetto \`e una sola classe, e la porta HTTP \`e soltanto il
@@ -383,13 +384,13 @@ l'eccezione.
 \subsection{Component}
 
 Gli acceptance test del singolo servizio sono scritti in Gherkin ed eseguiti con Cucumber. Il
-delivery-service viene avviato \textbf{per intero} --- controller, application layer e persistenza a
-eventi --- su una porta di test, e gli step lo interrogano \textbf{attraverso la sua API HTTP}, come
+delivery-service viene avviato \textbf{per intero} (controller, application layer e persistenza a
+eventi) su una porta di test, e gli step lo interrogano \textbf{attraverso la sua API HTTP}, come
 farebbe un client. Solo le porte verso gli altri servizi sono sostituite da stub.
 
 Il confine del test \`e quindi l'API pubblica del servizio, non le sue classi: gli step manipolano
 oggetti JSON e non hanno accesso al modello di dominio. Ne consegue che una modifica interna non
-rompe questi test, mentre una modifica al contratto pubblico s\`i --- che \`e esattamente il
+rompe questi test, mentre una modifica al contratto pubblico s\`i, che \`e esattamente il
 comportamento desiderato per un acceptance test.
 
 Si tratta di component test \emph{in-process}: la rete e il protocollo HTTP sono reali, mentre la
@@ -412,11 +413,17 @@ docker compose up -d
 
 \subsection{Fitness function}
 
-Oltre ai quattro livelli, ogni servizio include un \texttt{ArchitectureTest} basato su ArchUnit, che
-verifica che il dominio non dipenda da application e infrastructure, che le porte risiedano
-nell'application layer e che gli adapter risiedano nell'infrastructure layer. Non appartiene alla test
-pyramid: \`e una \emph{fitness function}, cio\`e un controllo automatico di una caratteristica
-architetturale, e come tale uno strumento di governance dell'architettura.
+Oltre ai quattro livelli, i tre servizi di dominio (\texttt{order-service},
+\texttt{delivery-service} e \texttt{drone-service}) includono un \texttt{ArchitectureTest} basato su
+ArchUnit, che verifica che il dominio non dipenda da application e infrastructure, che le porte
+risiedano nell'application layer e che gli adapter risiedano nell'infrastructure layer. Non appartiene
+alla test pyramid: \`e una \emph{fitness function}, cio\`e un controllo automatico di una
+caratteristica architetturale, e come tale uno strumento di governance dell'architettura.
+
+L'\texttt{api-gateway} ne \`e privo, per una ragione che vale la pena esplicitare: non avendo un core
+di dominio da proteggere (\`e un componente di sola infrastruttura, come discusso nella
+sezione~\ref{sec:metriche-gateway} a proposito delle metriche), la regola di dipendenza che le
+fitness function verificano negli altri servizi non ha qui un equivalente.
 
 % ============================================================
 \section{Observability al servizio dei Quality Attribute Scenarios}
@@ -431,7 +438,7 @@ l'observability le verifica a runtime.
 Entrambi gli scenari della sezione~\ref{sec:qas} sono stati tradotti in test eseguibili
 (\texttt{QualityAttributeScenariosTest}) che provocano la condizione avversa e leggono le metriche.
 
-\subsection{QAS-A --- Availability}
+\subsection{QAS-A: Availability}
 
 Gli observability pattern coinvolti sono due. L'\textbf{Health Check API} rende interrogabile lo stato
 di ciascun servizio; le \textbf{Application Metrics} lo trasformano in una serie temporale, perch\'e
@@ -461,7 +468,7 @@ che essa dipende da una scelta di configurazione dell'infrastruttura di monitora
 integrazione \texttt{anUnreachableServiceYieldsNoDrone} la \textbf{garantisce} prima del deploy,
 verificando che il proxy restituisca un risultato vuoto; la metrica la \textbf{osserva} in esercizio.
 
-\subsection{QAS-B --- Saturazione}
+\subsection{QAS-B: Saturazione}
 
 Qui l'observability pattern rilevante \`e la sola Application Metrics, attraverso il gauge
 \texttt{drones\_available}. La scelta del tipo di metrica \`e essa stessa parte della soluzione: un
@@ -470,7 +477,7 @@ counter potrebbe solo indicare quanti droni siano stati registrati complessivame
 
 Il test crea e conferma ordini finch\'e il gauge non raggiunge lo zero, quindi effettua un ulteriore
 ordine e verifica che venga comunque accettato e programmato, in attesa di un drone. La forma della
-risposta \`e la stessa del QAS-A --- \texttt{SCHEDULED} con \texttt{droneId} nullo --- ma la causa \`e
+risposta \`e la stessa del QAS-A, cio\`e \texttt{SCHEDULED} con \texttt{droneId} nullo, ma la causa \`e
 l'esaurimento di una risorsa anzich\'e un guasto.
 
 % ============================================================
@@ -494,7 +501,7 @@ dei benefici dell'Event Sourcing, l'audit trail permanente. Anche in questo caso
 cambiamento \`e limitato alla sostituzione dell'adapter.
 
 \paragraph{Non tutti i QAS sono misurabili.} Lo scenario di performance formulato nell'Assignment~1
---- tracking con latenza inferiore al secondo --- non \`e verificabile con la strumentazione attuale,
+(tracking con latenza inferiore al secondo) non \`e verificabile con la strumentazione attuale,
 composta da counter e gauge, che indicano quante richieste siano state servite ma non quanto tempo
 abbiano impiegato. Servirebbe un istogramma delle durate sul gateway, dal quale ricavare i percentili.
 La conseguenza generale merita di essere esplicitata: \textbf{lo strumento di misura determina quali
@@ -528,8 +535,8 @@ CQRS per le interrogazioni non basate su chiave. Quest'ultimo punto \`e forse l'
 utile dell'intero assignment: i pattern non sono elementi indipendenti da collezionare, ma soluzioni
 che si richiamano l'una con l'altra, e adottarne uno significa spesso accettarne un secondo.
 
-Infine, la test pyramid ha permesso di distribuire la verifica su livelli con obiettivi diversi ---
-dalla singola classe fino allo user journey attraverso il sistema completo --- e di collegare i test
+Infine, la test pyramid ha permesso di distribuire la verifica su livelli con obiettivi diversi,
+dalla singola classe fino allo user journey attraverso il sistema completo, e di collegare i test
 alle metriche: le stesse propriet\`a garantite dai test prima del deploy sono osservate dalle metriche
 durante l'esercizio.
 
